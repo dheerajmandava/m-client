@@ -16,7 +16,13 @@ import {
   Timer,
   Pencil,
   Trash2,
-  X
+  X,
+  Wrench,
+  Plus,
+  Package,
+  MoreVertical,
+  CheckCircle,
+  Undo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,10 +41,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import EditJobForm from '@/components/jobs/EditJobForm';
 import EditScheduleForm from '@/components/jobs/EditScheduleForm';
 import { toast } from 'sonner';
+import PartsManager from '@/components/jobs/PartsManager';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { useJobParts } from '@/hooks/useJobParts';
 
 const statusStyles = {
   PENDING: "bg-yellow-50 text-yellow-700 border border-yellow-200",
@@ -99,6 +119,17 @@ export default function JobDetailsPage({ params }) {
   });
 
   const mechanics = mechanicsData?.data || [];
+
+  const { 
+    parts, 
+    totalCost,
+    isLoading: partsLoading, 
+    error: partsError,
+    installPart,
+    returnPart,
+    isInstalling,
+    isReturning 
+  } = useJobParts(params.id);
 
   // Simple loading state while data is fetching
   if (isLoading || !job?.data) {
@@ -369,6 +400,103 @@ export default function JobDetailsPage({ params }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Card className="flex-1">
+        <CardHeader className={sectionStyles.header}>
+          <div className={sectionStyles.headerTitle}>
+            <Wrench className="h-3.5 w-3.5 text-primary" />
+            Parts Used
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Part
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Parts</DialogTitle>
+              </DialogHeader>
+              <PartsManager jobId={params.id} />
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+
+        <CardContent className={sectionStyles.content}>
+          <div className="space-y-4">
+            {!parts?.length ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No parts added yet</p>
+              </div>
+            ) : (
+              <>
+                {parts.map(part => (
+                  <div key={part.id} className="flex items-center justify-between border rounded-lg p-3">
+                    <div>
+                      <div className="font-medium">{part.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {part.partNumber} • {part.quantity} units
+                      </div>
+                      <div className="text-sm font-medium mt-1">
+                        ₹{(part.sellingPrice * part.quantity).toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge variant={
+                        part.status === 'INSTALLED' ? 'success' :
+                        part.status === 'PENDING' ? 'warning' : 
+                        'secondary'
+                      }>
+                        {part.status}
+                      </Badge>
+                      
+                      {(part.status === 'PENDING' || part.status === 'INSTALLED') && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {part.status === 'PENDING' && (
+                              <DropdownMenuItem 
+                                onClick={() => installPart(part.id)}
+                                disabled={isInstalling}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {isInstalling ? 'Installing...' : 'Mark as Installed'}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem 
+                              onClick={() => returnPart({ partId: part.id, reason: 'Not needed' })}
+                              disabled={isReturning}
+                            >
+                              <Undo className="h-4 w-4 mr-2" />
+                              {isReturning ? 'Returning...' : 'Return to Stock'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Total Parts Cost</span>
+                    <span className="text-lg font-semibold">
+                      ₹{totalCost.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

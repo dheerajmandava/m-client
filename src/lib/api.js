@@ -764,20 +764,62 @@ export const api = {
   },
 
   getInventorySettings: async () => {
-    const response = await fetch('/api/inventory/settings');
+    const response = await axiosClient.get('/api/inventory/settings');
     if (!response.ok) throw new Error('Failed to fetch inventory settings');
     return response.json();
   },
 
-  updateInventorySettings: async (settings) => {
-    const response = await fetch('/api/inventory/settings', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(settings),
-    });
-    if (!response.ok) throw new Error('Failed to update inventory settings');
-    return response.json();
+  async getJobParts(jobId) {
+    try {
+      const response = await axiosClient.get(`/job-cards/${jobId}/parts`);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to fetch parts');
+      }
+      return response.data.data; // Returns { parts, totalCost }
+    } catch (error) {
+      throw error.response?.data?.message || error.message || 'Failed to fetch parts';
+    }
   },
+
+  async installJobPart(jobId, partId) {
+    try {
+      const response = await axiosClient.post(`/job-cards/${jobId}/parts/${partId}/install`);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to install part');
+      }
+      return response.data.data;
+    } catch (error) {
+      throw error.response?.data?.message || error.message || 'Failed to install part';
+    }
+  },
+
+  async returnJobPart(jobId, partId, reason) {
+    try {
+      const response = await axiosClient.post(`/job-cards/${jobId}/parts/${partId}/return`, { reason });
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || 'Failed to return part');
+      }
+      return response.data.data;
+    } catch (error) {
+      throw error.response?.data?.message || error.message || 'Failed to return part';
+    }
+  },
+
+  async removeJobPart(jobId, partId) {
+    try {
+      const response = await axiosClient.delete(`/job-cards/${jobId}/parts/${partId}`);
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to remove part'
+      };
+    }
+  }
 };
