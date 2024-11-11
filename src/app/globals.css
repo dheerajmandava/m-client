@@ -221,3 +221,12 @@
     @apply text-[#8A8A8A] dark:text-[#737373];
   }
 }
+
+/* Add these styles to fix dialog corners */
+.DialogContent {
+  @apply rounded-lg border shadow-lg;
+}
+
+.DialogOverlay {
+  @apply bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0;
+}

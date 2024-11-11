@@ -824,5 +824,78 @@ export const api = {
         message: error.response?.data?.message || 'Failed to remove part'
       };
     }
+  },
+
+  // Create estimate
+  async createEstimate(jobId, estimateData) {
+    try {
+      const response = await axiosClient.post(`/jobs/${jobId}/estimates`, estimateData);
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('Create estimate error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create estimate',
+        error: error.response?.data?.error || error.message
+      };
+    }
+  },
+
+  // Get estimates for a job
+  async getJobEstimates(jobId) {
+    try {
+      const response = await axiosClient.get(`/jobs/${jobId}/estimates`);
+      return {
+        success: true,
+        data: response.data.data || []
+      };
+    } catch (error) {
+      console.error('Get job estimates error:', error);
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Failed to fetch estimates',
+        error: error.message
+      };
+    }
+  },
+
+  // Get single estimate
+  async getEstimate(id) {
+    try {
+      const response = await axiosClient.get(`/estimates/${id}`);
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch estimate',
+        error: error.message
+      };
+    }
+  },
+
+  // Update estimate status
+  async updateEstimateStatus(id, status, notes) {
+    try {
+      const response = await axiosClient.patch(`/estimates/${id}/status`, { status, notes });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to update estimate status',
+        error: error.message
+      };
+    }
   }
 };
