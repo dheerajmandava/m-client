@@ -63,7 +63,11 @@ export default function JobStatusManager({ jobId, currentStatus, className }) {
 
     setIsUpdating(true);
     try {
-      const result = await api.updateJobStatus(jobId, { status, notes });
+      const result = await api.updateJobStatus(jobId, {
+        status: status,
+        notes: notes
+      });
+      
       if (result.success) {
         toast.success('Status updated successfully');
         queryClient.invalidateQueries(['job', jobId]);

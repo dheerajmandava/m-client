@@ -302,24 +302,27 @@ export const api = {
     }
   },
 
-  async updateJobStatus(jobId, status, notes) {
+  async updateJobStatus(jobId, data) {
     try {
       const response = await axiosClient.patch(`/job-cards/${jobId}/status`, {
-        status,
-        notes
+        status: data.status,
+        notes: data.notes
       });
+      
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
+      
       return {
         success: true,
-        data: response.data.data
+        data: response.data.data,
+        message: 'Status updated successfully'
       };
     } catch (error) {
-      console.error('Update job status error:', error.response?.data || error);
+      console.error('Update status error:', error.response?.data || error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to update job status',
+        message: error.response?.data?.message || 'Failed to update status',
         error: error.response?.data?.error || error.message
       };
     }
