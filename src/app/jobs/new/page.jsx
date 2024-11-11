@@ -1,232 +1,85 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { api } from '@/lib/api'
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { JobCardForm } from '@/components/jobs/JobCardForm';
+import { api } from '@/lib/api';
+
+const formatJobData = (data) => ({
+  ...data,
+  mileage: data.mileage?.toString() || null,
+  vehicleYear: data.vehicleYear?.toString() || null,
+  estimatedCost: data.estimatedCost?.toString() || '0'
+});
 
 export default function NewJobPage() {
-  const router = useRouter()
-  const { isLoaded, userId, getToken } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-  
-  const [jobData, setJobData] = useState({
-    customerName: '',
-    customerPhone: '',
-    customerEmail: '',
-    vehicleMake: '',
-    vehicleModel: '',
-    vehicleYear: '',
-    registrationNo: '',
-    mileage: '',
-    description: '',
-    estimatedCost: ''
-  })
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
-
-    try {
-      if (!isLoaded || !userId) {
-        throw new Error('Please sign in to create a job')
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data) => api.createJobCard(formatJobData(data)),
+    onSuccess: (result) => {
+      if (!result.success) {
+        throw new Error(result.message);
       }
-
-      const token = await getToken()
-      if (!token) {
-        throw new Error('Authentication failed')
-      }
-
-      await api.createJobCard(jobData, token)
-      router.push('/dashboard')
-    } catch (error) {
-      console.error('Error creating job:', error)
-      setError(error.message || 'Failed to create job')
-    } finally {
-      setIsSubmitting(false)
+      queryClient.invalidateQueries(['jobs']);
+      toast.success('Job card created successfully');
+      router.push('/jobs');
+    },
+    onError: (error) => {
+      const message = error.message || 'Failed to create job card';
+      setError(message);
+      toast.error(message);
     }
-  }
+  });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setJobData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  if (!isLoaded || !userId) {
-    return (
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="p-6">
-          <div className="flex justify-center items-center h-32">
-            Loading...
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  const handleSubmit = (formData) => {
+    setError('');
+    mutate(formData);
+  };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Create New Job Card</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Customer Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  type="text"
-                  name="customerName"
-                  value={jobData.customerName}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardHeader>
+          <h1 className="text-2xl font-bold">New Job Card</h1>
+        </CardHeader>
+        <CardContent>
+          <JobCardForm
+            onSubmit={handleSubmit}
+            isSubmitting={isPending}
+            error={error}
+            submitButton={
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push('/jobs')}
+                  disabled={isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Job Card'
+                  )}
+                </Button>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="tel"
-                  name="customerPhone"
-                  value={jobData.customerPhone}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  name="customerEmail"
-                  value={jobData.customerEmail}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Vehicle Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Make</label>
-                <input
-                  type="text"
-                  name="vehicleMake"
-                  value={jobData.vehicleMake}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Model</label>
-                <input
-                  type="text"
-                  name="vehicleModel"
-                  value={jobData.vehicleModel}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Year</label>
-                <input
-                  type="text"
-                  name="vehicleYear"
-                  value={jobData.vehicleYear}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Registration Number</label>
-                <input
-                  type="text"
-                  name="registrationNo"
-                  value={jobData.registrationNo}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Mileage</label>
-                <input
-                  type="number"
-                  name="mileage"
-                  value={jobData.mileage}
-                  onChange={handleChange}
-                  className="w-full border rounded-md p-2"
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Job Details</h3>
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                name="description"
-                value={jobData.description}
-                onChange={handleChange}
-                rows="4"
-                className="w-full border rounded-md p-2"
-                required
-                disabled={isSubmitting}
-              ></textarea>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Estimated Cost</label>
-              <input
-                type="number"
-                name="estimatedCost"
-                value={jobData.estimatedCost}
-                onChange={handleChange}
-                className="w-full border rounded-md p-2"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          <button 
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md
-              ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}
-            `}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Job Card'}
-          </button>
-        </form>
-      </CardContent>
-    </Card>
-  )
+            }
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
 } 

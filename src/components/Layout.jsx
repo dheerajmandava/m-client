@@ -1,6 +1,6 @@
 'use client'
 import { useAuth } from '@clerk/nextjs'
-import { UserButton, SignedIn } from '@clerk/nextjs'
+import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -8,8 +8,11 @@ import {
   Briefcase, 
   PlusCircle, 
   Store,
+  Package,
   Menu,
-  X
+  X,
+  Calendar,
+  Users
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
@@ -36,9 +39,12 @@ export default function Layout({ children }) {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/suppliers', label: 'Suppliers', icon: Users },
     { href: '/jobs', label: 'Jobs', icon: Briefcase },
+    { href: '/inventory', label: 'Inventory', icon: Package },
     ...(hasShop ? [
-      { href: '/jobs/new', label: 'New Job', icon: PlusCircle },
+      { href: '/schedule', label: 'Schedule', icon: Calendar },
+      { href: '/mechanics', label: 'Mechanics', icon: Users },
       { href: '/shop/profile', label: 'Shop Profile', icon: Store },
     ] : [
       { href: '/shop/new', label: 'Create Shop', icon: Store }
@@ -86,11 +92,11 @@ export default function Layout({ children }) {
                     flex items-center px-6 py-3 text-sm font-medium
                     transition-colors duration-150 ease-in-out
                     ${isActive 
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
+                      ? 'bg-primary/10 text-primary border-r-2 border-primary' 
+                      : 'text-[#4A5568] hover:bg-gray-50 hover:text-[#2D3748]'}
                   `}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
+                  <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary' : 'text-[#718096]'}`} />
                   {item.label}
                 </Link>
               )

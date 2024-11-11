@@ -1,68 +1,54 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { api } from '@/lib/api'
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from 'lucide-react';
 
 export default function CreateShopPage() {
-  const router = useRouter()
-  const { getToken } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: ''
+  });
 
-  useEffect(() => {
-    async function checkExistingShop() {
-      try {
-        const token = await getToken()
-        const response = await api.getShopProfile(token)
-        
-        if (response.data) {
-          // If shop exists, redirect to profile page
-          router.replace('/shop/profile')
-        }
-      } catch (error) {
-        // Only continue loading the create form if it's a 404 (no shop found)
-        if (error.status === 404) {
-          setLoading(false)
-        } else {
-          setError('Failed to check shop profile')
-          console.error('Error:', error)
-        }
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: (data) => api.createShopProfile(data),
+    onSuccess: (result) => {
+      if (!result.success) {
+        throw new Error(result.message);
       }
+      queryClient.invalidateQueries(['shop']);
+      toast.success('Shop created successfully');
+      router.push('/dashboard');
+    },
+    onError: (error) => {
+      const message = error.message || 'Failed to create shop';
+      toast.error(message);
     }
+  });
 
-    checkExistingShop()
-  }, [getToken, router])
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutate(formData);
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Checking shop profile...</p>
-        </div>
-      </div>
-    )
-  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  if (error) {
-    return (
-      <div className="container max-w-2xl mx-auto p-4">
-        <Card>
-          <CardContent className="text-center py-6">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => router.push('/dashboard')}>
-              Return to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Rest of your existing create shop form code...
   return (
     <div className="container max-w-2xl mx-auto p-4">
       <Card>
@@ -70,9 +56,62 @@ export default function CreateShopPage() {
           <CardTitle>Create Shop Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Your existing form JSX */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Shop Name</label>
+              <Input
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Address</label>
+              <Input
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+              />
+            </div>
+            {error && (
+              <div className="text-red-500 text-sm">{error.message}</div>
+            )}
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isPending}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Shop...
+                </>
+              ) : (
+                'Create Shop'
+              )}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 } 

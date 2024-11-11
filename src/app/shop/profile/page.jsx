@@ -1,162 +1,130 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { api } from '@/lib/api'
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
+import { Building2, Mail, Phone, MapPin, Pencil } from 'lucide-react';
 
 export default function ShopProfilePage() {
-  const router = useRouter()
-  const { getToken } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [shop, setShop] = useState(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
-  })
+  const router = useRouter();
+  
+  const { data: shopData, isLoading, error } = useQuery({
+    queryKey: ['shop'],
+    queryFn: api.getShopProfile
+  });
 
-  useEffect(() => {
-    async function fetchShopProfile() {
-      try {
-        const token = await getToken()
-        const response = await api.getShopProfile(token)
-        const shopData = response.data
-        setShop(shopData)
-        setFormData({
-          name: shopData.name || '',
-          email: shopData.email || '',
-          phone: shopData.phone || '',
-          address: shopData.address || ''
-        })
-      } catch (error) {
-        console.error('Error fetching shop:', error)
-        setError(error.message)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  console.log('Shop Data:', shopData); // Add this for debugging
 
-    fetchShopProfile()
-  }, [getToken])
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  // Check for loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="text-center py-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2">Loading shop details...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      const token = await getToken()
-      await api.updateShopProfile(formData, token)
-      setIsEditing(false)
-      // Refresh shop data
-      const response = await api.getShopProfile(token)
-      setShop(response.data)
-    } catch (error) {
-      console.error('Error updating shop:', error)
-      setError(error.message)
-    }
+  // Check for error state
+  if (error || !shopData?.success) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="text-center py-8">
+            <h2 className="text-2xl font-semibold mb-4">Error Loading Shop Profile</h2>
+            <p className="text-gray-600 mb-6">
+              {shopData?.message || error?.message || 'Failed to load shop profile'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div className="text-red-500">Error: {error}</div>
+  // Check if shop exists
+  const shop = shopData;
+  if (!shop) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="text-center py-8">
+            <h2 className="text-2xl font-semibold mb-4">No Shop Profile Found</h2>
+            <p className="text-gray-600 mb-6">
+              You haven't created a shop profile yet.
+            </p>
+            <Button 
+              onClick={() => router.push('/shop/new')}
+              className="flex items-center gap-2"
+            >
+              Create Shop Profile
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Shop Profile</h1>
+        <Button
+          variant="outline"
+          onClick={() => router.push('/shop/edit')}
+          className="flex items-center gap-2"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit Profile
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Shop Profile</CardTitle>
-          {!isEditing && (
-            <Button onClick={() => setIsEditing(true)}>
-              Edit Profile
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <Building2 className="h-5 w-5 text-muted-foreground mt-1" />
               <div>
-                <label className="block text-sm font-medium mb-1">Shop Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md"
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Shop Name</label>
-                <p>{shop.name}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <p>{shop.email}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
-                <p>{shop.phone || 'Not provided'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <p>{shop.address || 'Not provided'}</p>
+                <h3 className="font-semibold">{shop.name}</h3>
+                <p className="text-sm text-muted-foreground">Shop Name</p>
               </div>
             </div>
-          )}
+
+            <div className="flex items-start gap-4">
+              <Mail className="h-5 w-5 text-muted-foreground mt-1" />
+              <div>
+                <h3 className="font-semibold">{shop.email}</h3>
+                <p className="text-sm text-muted-foreground">Email Address</p>
+              </div>
+            </div>
+
+            {shop.phone && (
+              <div className="flex items-start gap-4">
+                <Phone className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <h3 className="font-semibold">{shop.phone}</h3>
+                  <p className="text-sm text-muted-foreground">Phone Number</p>
+                </div>
+              </div>
+            )}
+
+            {shop.address && (
+              <div className="flex items-start gap-4">
+                <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <h3 className="font-semibold whitespace-pre-wrap">{shop.address}</h3>
+                  <p className="text-sm text-muted-foreground">Address</p>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 } 
