@@ -43,20 +43,20 @@ export default function InventoryValueChart({ timeframe = 30 }) {
   }
 
   const chartData = {
-    labels: valueHistory?.data?.map(item => 
+    labels: valueHistory.map(item => 
       new Date(item.date).toLocaleDateString()
     ) || [],
     datasets: [
       {
         label: 'Total Value',
-        data: valueHistory?.data?.map(item => item.totalValue) || [],
+        data: valueHistory.map(item => item.totalValue) || [],
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.5)',
         tension: 0.3
       },
       {
         label: 'Cost Value',
-        data: valueHistory?.data?.map(item => item.costValue) || [],
+        data: valueHistory.map(item => item.costValue) || [],
         borderColor: 'rgb(99, 102, 241)',
         backgroundColor: 'rgba(99, 102, 241, 0.5)',
         tension: 0.3

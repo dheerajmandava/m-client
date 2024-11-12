@@ -35,8 +35,8 @@ export default function InventoryCharts() {
   });
 
   // Calculate supplier performance
-  const supplierPerformance = suppliers?.data?.map(supplier => {
-    const supplierOrders = orders?.data?.filter(order => order.supplier.id === supplier.id) || [];
+  const supplierPerformance = suppliers.map(supplier => {
+    const supplierOrders = orders.filter(order => order.supplier.id === supplier.id) || [];
     const totalOrders = supplierOrders.length;
     const completedOnTime = supplierOrders.filter(order => 
       order.status === 'COMPLETE' && 
@@ -53,7 +53,7 @@ export default function InventoryCharts() {
   }) || [];
 
   // Calculate monthly inventory value trends
-  const monthlyTrends = orders?.data?.reduce((acc, order) => {
+  const monthlyTrends = orders.reduce((acc, order) => {
     const month = new Date(order.createdAt).toLocaleString('default', { month: 'short' });
     if (!acc[month]) {
       acc[month] = { month, value: 0, orders: 0 };

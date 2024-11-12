@@ -1,17 +1,14 @@
 'use client'
 
-import { ShopProvider } from '@/contexts/ShopContext'
-import { AuthProvider } from '@/providers/AuthProvider'
 import { QueryProvider } from '@/providers/QueryProvider'
+import { ShopProvider } from '@/contexts/ShopContext'
 
 export default function Providers({ children }) {
   return (
     <QueryProvider>
-      <AuthProvider>
-        <ShopProvider>
-          {children}
-        </ShopProvider>
-      </AuthProvider>
+      <ShopProvider>
+        {children}
+      </ShopProvider>
     </QueryProvider>
   )
-} 
+}

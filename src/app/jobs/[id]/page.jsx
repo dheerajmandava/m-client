@@ -30,8 +30,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import JobStatusManager from '@/components/jobs/JobStatusManager';
 import JobNotes from '@/components/jobs/JobNotes';
-import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { api } from '@/lib/api/index';
+
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -87,39 +87,35 @@ const sectionStyles = {
   fieldValue: "text-xs font-medium",
 };
 
-export default function JobDetailsPage({ params }) {
+export default function JobDetailPage({ params }) {
   const router = useRouter();
-  
-  const { data: job, isLoading } = useQuery({
-    queryKey: ['job', params.id],
-    queryFn: () => api.getJobCard(params.id)
+  const { id } = params;
+  const queryClient = useQueryClient();
+
+  const { data: jobResponse, isLoading } = useQuery({
+    queryKey: ['job', id],
+    queryFn: () => api.jobs.get(id)
   });
+
+  const job = jobResponse;
 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showScheduleEditDialog, setShowScheduleEditDialog] = useState(false);
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.deleteJobCard(params.id),
-    onSuccess: (response) => {
-      if (!response.success) {
-        toast.error(response.message);
-        return;
-      }
+    mutationFn: () => api.jobs.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['jobs']);
       toast.success('Job deleted successfully');
       router.push('/jobs');
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to delete job');
     }
   });
 
-  const { data: mechanicsData } = useQuery({
+  const { data: mechanics = [] } = useQuery({
     queryKey: ['mechanics'],
-    queryFn: api.getMechanics
+    queryFn: () => api.mechanics.getAll()
   });
-
-  const mechanics = mechanicsData?.data || [];
 
   const { 
     parts, 
@@ -130,10 +126,10 @@ export default function JobDetailsPage({ params }) {
     returnPart,
     isInstalling,
     isReturning 
-  } = useJobParts(params.id);
+  } = useJobParts(id);
 
   // Simple loading state while data is fetching
-  if (isLoading || !job?.data) {
+  if (isLoading || !job) {
     return null; // Or a simple loading spinner if you prefer
   }
 
@@ -152,16 +148,16 @@ export default function JobDetailsPage({ params }) {
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <h1 className={typographyStyles.h1}>
-                {job.data.customerName}
+                {job.customerName}
               </h1>
               <div className="px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20">
                 <span className="text-sm text-primary font-medium">
-                  Job #{job.data.id.slice(-6).toUpperCase()}
+                  Job #{job.id.slice(-6).toUpperCase()}
                 </span>
               </div>
             </div>
             <p className="text-[#718096] text-sm">
-              Created on {new Date(job.data.createdAt).toLocaleDateString()}
+              Created on {new Date(job.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -170,7 +166,7 @@ export default function JobDetailsPage({ params }) {
         <div className="flex items-center gap-2">
         <Button 
           variant="outline"
-          onClick={() => router.push(`/jobs/${params.id}/estimates`)}
+          onClick={() => router.push(`/jobs/${id}/estimates`)}
         >
           <FileText className="h-4 w-4 mr-2" />
           Estimates
@@ -205,22 +201,22 @@ export default function JobDetailsPage({ params }) {
             <div className={sectionStyles.fieldGroup}>
               <div className={sectionStyles.field}>
                 <div className={sectionStyles.fieldLabel}>Customer Name</div>
-                <div className={sectionStyles.fieldValue}>{job.data.customerName}</div>
+                <div className={sectionStyles.fieldValue}>{job.customerName}</div>
               </div>
               
               <div className={sectionStyles.field}>
                 <div className={sectionStyles.fieldLabel}>Phone Number</div>
-                <div className={sectionStyles.fieldValue}>{job.data.customerPhone}</div>
+                <div className={sectionStyles.fieldValue}>{job.customerPhone}</div>
               </div>
 
               <div className={sectionStyles.field}>
                 <div className={sectionStyles.fieldLabel}>Email Address</div>
-                <div className={sectionStyles.fieldValue}>{job.data.customerEmail}</div>
+                <div className={sectionStyles.fieldValue}>{job.customerEmail}</div>
               </div>
 
               <div className={sectionStyles.field}>
                 <div className={sectionStyles.fieldLabel}>Job Number</div>
-                <div className={sectionStyles.fieldValue}>#{job.data.jobNumber}</div>
+                <div className={sectionStyles.fieldValue}>#{job.jobNumber}</div>
               </div>
             </div>
           </CardContent>
@@ -240,23 +236,23 @@ export default function JobDetailsPage({ params }) {
               <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Make</div>
-                  <div className={sectionStyles.fieldValue}>{job.data.vehicleMake}</div>
+                  <div className={sectionStyles.fieldValue}>{job.vehicleMake}</div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Model</div>
-                  <div className={sectionStyles.fieldValue}>{job.data.vehicleModel}</div>
+                  <div className={sectionStyles.fieldValue}>{job.vehicleModel}</div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Registration</div>
                   <div className={sectionStyles.fieldValue}>
-                    <span className="font-mono">{job.data.registrationNo}</span>
+                    <span className="font-mono">{job.registrationNo}</span>
                   </div>
                 </div>
-                {job.data.mileage && (
+                {job.mileage && (
                   <div className={sectionStyles.field}>
                     <div className={sectionStyles.fieldLabel}>Mileage</div>
                     <div className={sectionStyles.fieldValue}>
-                      {job.data.mileage.toLocaleString()} km
+                      {job.mileage.toLocaleString()} km
                     </div>
                   </div>
                 )}
@@ -287,21 +283,21 @@ export default function JobDetailsPage({ params }) {
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Date</div>
                   <div className={sectionStyles.fieldValue}>
-                    {new Date(job.data.scheduledDate).toLocaleDateString()}
+                    {new Date(job.scheduledDate).toLocaleDateString()}
                   </div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Time</div>
-                  <div className={sectionStyles.fieldValue}>{job.data.scheduledTime}</div>
+                  <div className={sectionStyles.fieldValue}>{job.scheduledTime}</div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Duration</div>
-                  <div className={sectionStyles.fieldValue}>{job.data.estimatedHours}h</div>
+                  <div className={sectionStyles.fieldValue}>{job.estimatedHours}h</div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Mechanic</div>
                   <div className={sectionStyles.fieldValue}>
-                    {job.data.mechanic?.name || 'Not assigned'}
+                    {job?.mechanic?.name || 'Not assigned'}
                   </div>
                 </div>
               </div>
@@ -321,13 +317,13 @@ export default function JobDetailsPage({ params }) {
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Type</div>
                   <div className={sectionStyles.fieldValue}>
-                    {job.data.serviceType || 'Not specified'}
+                    {job.serviceType || 'Not specified'}
                   </div>
                 </div>
                 <div className={sectionStyles.field}>
                   <div className={sectionStyles.fieldLabel}>Priority</div>
                   <div className={sectionStyles.fieldValue}>
-                    {job.data.priority || 'Normal'}
+                    {job.priority || 'Normal'}
                   </div>
                 </div>
               </div>
@@ -340,8 +336,8 @@ export default function JobDetailsPage({ params }) {
           {/* Status Manager - kept same width */}
           <div className="w-[400px]">
             <JobStatusManager 
-              jobId={job.data.id} 
-              currentStatus={job.data.status} 
+              jobId={job.id} 
+              currentStatus={job.status} 
               className="h-full"
             />
           </div>
@@ -349,8 +345,8 @@ export default function JobDetailsPage({ params }) {
           {/* Notes section - reduced width */}
           <div className="w-[500px]"> {/* Fixed width instead of flex-1 */}
             <JobNotes 
-              jobId={job.data.id} 
-              notes={job.data.notes || []} 
+              jobId={job.id} 
+              notes={job.notes || []} 
               className="h-full"
             />
           </div>
@@ -367,7 +363,7 @@ export default function JobDetailsPage({ params }) {
           </div>
           
           <div className="px-6 py-4 overflow-y-auto max-h-[calc(80vh-8rem)]">
-            <EditJobForm job={job.data} onClose={() => setShowEditDialog(false)} />
+            <EditJobForm job={job} onClose={() => setShowEditDialog(false)} />
           </div>
         </DialogContent>
       </Dialog>
@@ -392,21 +388,15 @@ export default function JobDetailsPage({ params }) {
       </AlertDialog>
 
       <Dialog open={showScheduleEditDialog} onOpenChange={setShowScheduleEditDialog}>
-        <DialogContent className="sm:max-w-[600px] overflow-hidden rounded-lg p-0">
-          <div className="px-6 py-4 border-b bg-white flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-base font-semibold">Edit Schedule</DialogTitle>
-              <p className="text-xs text-muted-foreground">All fields marked with * are required</p>
-            </div>
-          </div>
-          
-          <div className="px-6 py-4 overflow-y-auto max-h-[calc(80vh-8rem)]">
-            <EditScheduleForm 
-              job={job.data} 
-              mechanics={mechanics} 
-              onClose={() => setShowScheduleEditDialog(false)} 
-            />
-          </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Schedule</DialogTitle>
+          </DialogHeader>
+          <EditScheduleForm 
+            jobId={id}
+            currentSchedule={job}
+            onClose={() => setShowScheduleEditDialog(false)}
+          />
         </DialogContent>
       </Dialog>
 
@@ -427,7 +417,7 @@ export default function JobDetailsPage({ params }) {
               <DialogHeader>
                 <DialogTitle>Add Parts</DialogTitle>
               </DialogHeader>
-              <PartsManager jobId={params.id} />
+              <PartsManager jobId={id} />
             </DialogContent>
           </Dialog>
         </CardHeader>

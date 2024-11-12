@@ -12,7 +12,7 @@ export default function ShopProfilePage() {
   
   const { data: shopData, isLoading, error } = useQuery({
     queryKey: ['shop'],
-    queryFn: api.getShopProfile
+    queryFn: () => api.shops.getProfile()
   });
 
   console.log('Shop Data:', shopData); // Add this for debugging

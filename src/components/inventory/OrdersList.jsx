@@ -32,7 +32,7 @@ export default function OrdersList() {
 
   return (
     <>
-      {!orders?.data?.length ? (
+      {!orders.length ? (
         <div className="text-center py-6 text-muted-foreground">
           No purchase orders found.
         </div>
@@ -50,7 +50,7 @@ export default function OrdersList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.data.map((order) => (
+            {orders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell>{order.id}</TableCell>
                 <TableCell>

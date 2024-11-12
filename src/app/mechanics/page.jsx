@@ -16,10 +16,10 @@ export default function MechanicsPage() {
 
   const { data: mechanics, isLoading } = useQuery({
     queryKey: ['mechanics'],
-    queryFn: () => api.getMechanics()
+    queryFn: () => api.mechanics.getAll()
   });
 
-  const filteredMechanics = mechanics?.data?.filter(mechanic => 
+  const filteredMechanics = mechanics.filter(mechanic => 
     mechanic.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 

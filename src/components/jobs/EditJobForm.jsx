@@ -29,12 +29,8 @@ export default function EditJobForm({ job, onClose }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => api.updateJobCard(job.id, data),
-    onSuccess: (response) => {
-      if (!response.success) {
-        toast.error(response.message);
-        return;
-      }
+    mutationFn: (data) => api.jobs.update(job.id, data),
+    onSuccess: () => {
       queryClient.invalidateQueries(['job', job.id]);
       toast.success('Job updated successfully');
       onClose();

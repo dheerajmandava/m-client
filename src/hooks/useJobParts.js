@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 
 export function useJobParts(jobId) {
   const queryClient = useQueryClient();
 
   const partsQuery = useQuery({
     queryKey: ['jobParts', jobId],
-    queryFn: () => api.getJobParts(jobId),
+    queryFn: () => api.jobs.getParts(jobId),
     select: (data) => ({
       parts: data.parts || [],
       totalCost: data.totalCost || 0
@@ -15,7 +15,7 @@ export function useJobParts(jobId) {
   });
 
   const installPartMutation = useMutation({
-    mutationFn: (partId) => api.installJobPart(jobId, partId),
+    mutationFn: (partId) => api.jobs.installPart(jobId, partId),
     onSuccess: () => {
       queryClient.invalidateQueries(['jobParts', jobId]);
       toast.success('Part marked as installed');
@@ -26,7 +26,7 @@ export function useJobParts(jobId) {
   });
 
   const returnPartMutation = useMutation({
-    mutationFn: ({ partId, reason }) => api.returnJobPart(jobId, partId, reason),
+    mutationFn: ({ partId, reason }) => api.jobs.returnPart(jobId, partId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['jobParts', jobId]);
       queryClient.invalidateQueries(['inventory']);
@@ -38,8 +38,8 @@ export function useJobParts(jobId) {
   });
 
   return {
-    parts: partsQuery.data?.parts || [],
-    totalCost: partsQuery.data?.totalCost || 0,
+    parts: partsQuery.parts || [],
+    totalCost: partsQuery.totalCost || 0,
     isLoading: partsQuery.isLoading,
     error: partsQuery.error,
     installPart: installPartMutation.mutate,

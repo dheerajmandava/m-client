@@ -20,25 +20,21 @@ export default function CreateShopPage() {
     address: ''
   });
 
-  const { mutate, isPending, error } = useMutation({
-    mutationFn: (data) => api.createShopProfile(data),
-    onSuccess: (result) => {
-      if (!result.success) {
-        throw new Error(result.message);
-      }
+  const createMutation = useMutation({
+    mutationFn: (data) => api.shops.create(data),
+    onSuccess: () => {
       queryClient.invalidateQueries(['shop']);
-      toast.success('Shop created successfully');
-      router.push('/dashboard');
+      toast.success('Shop profile created successfully');
+      router.push('/shop/profile');
     },
     onError: (error) => {
-      const message = error.message || 'Failed to create shop';
-      toast.error(message);
+      toast.error(error.message || 'Failed to create shop profile');
     }
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    mutate(formData);
+    createMutation.mutate(formData);
   };
 
   const handleChange = (e) => {
@@ -92,15 +88,15 @@ export default function CreateShopPage() {
                 onChange={handleChange}
               />
             </div>
-            {error && (
-              <div className="text-red-500 text-sm">{error.message}</div>
+            {createMutation.error && (
+              <div className="text-red-500 text-sm">{createMutation.error.message}</div>
             )}
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isPending}
+              disabled={createMutation.isPending}
             >
-              {isPending ? (
+              {createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating Shop...

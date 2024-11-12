@@ -1,24 +1,33 @@
-import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
+'use client';
+
+import { ClerkProvider } from '@clerk/nextjs'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import Providers from './providers'
 import Layout from '@/components/Layout'
+import { usePathname } from 'next/navigation'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
+const publicRoutes = ['/', '/sign-in', '/sign-up'];
+
 export default function RootLayout({ children }) {
+  const pathname = usePathname();
+  const isPublicRoute = publicRoutes.includes(pathname);
+
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        baseTheme: undefined,
+        signIn: { routing: "path" },
+        signUp: { routing: "path" }
+      }}
+    >
       <html lang="en" className="h-full">
         <body className={`${inter.className} h-full bg-gray-50`}>
           <Providers>
-            <SignedIn>
-              <Layout>{children}</Layout>
-            </SignedIn>
-            <SignedOut>
-              {children}
-            </SignedOut>
+            {isPublicRoute ? children : <Layout>{children}</Layout>}
             <Toaster position="top-right" />
           </Providers>
         </body>

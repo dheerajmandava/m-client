@@ -19,13 +19,13 @@ export default function InventoryAnalytics() {
     );
   }
 
-  const totalItems = inventory?.data?.length || 0;
-  const lowStockItems = inventory?.data?.filter(item => item.quantity <= item.minQuantity).length || 0;
-  const totalValue = inventory?.data?.reduce((sum, item) => 
+  const totalItems = inventory.length || 0;
+  const lowStockItems = inventory.filter(item => item.quantity <= item.minQuantity).length || 0;
+  const totalValue = inventory.reduce((sum, item) => 
     sum + (item.quantity * parseFloat(item.costPrice || 0)), 0) || 0;
   
   // Calculate potential profit margin
-  const potentialProfit = inventory?.data?.reduce((sum, item) => {
+  const potentialProfit = inventory.reduce((sum, item) => {
     const costPrice = parseFloat(item.costPrice || 0);
     const sellingPrice = parseFloat(item.sellingPrice || 0);
     const margin = (sellingPrice - costPrice) * item.quantity;

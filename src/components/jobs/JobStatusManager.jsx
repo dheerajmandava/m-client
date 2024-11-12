@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -55,29 +55,27 @@ export default function JobStatusManager({ jobId, currentStatus, className }) {
   const currentStatusInfo = JOB_STATUSES.find(s => s.value === status);
   const Icon = currentStatusInfo?.icon;
 
-  const handleStatusUpdate = async () => {
-    if (!notes.trim()) {
-      toast.error('Please add notes about this status change');
-      return;
+  const updateStatusMutation = useMutation({
+    mutationFn: (data) => api.jobs.updateStatus(jobId, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['job', jobId]);
+      setNotes('');
+      toast.success(data.message || 'Status updated successfully');
+    },
+    onError: (error) => {
+      console.error('Status update error:', error);
+      toast.error(error.message || 'Failed to update job status');
+      setStatus(currentStatus);
     }
+  });
 
+  const handleStatusUpdate = async (newStatus) => {
     setIsUpdating(true);
     try {
-      const result = await api.updateJobStatus(jobId, {
-        status: status,
-        notes: notes
+      await updateStatusMutation.mutateAsync({
+        status: newStatus,
+        notes: notes.trim()
       });
-      
-      if (result.success) {
-        toast.success('Status updated successfully');
-        queryClient.invalidateQueries(['job', jobId]);
-        queryClient.invalidateQueries(['jobs']);
-        setNotes('');
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error) {
-      toast.error(error.message || 'Failed to update status');
     } finally {
       setIsUpdating(false);
     }
@@ -131,7 +129,7 @@ export default function JobStatusManager({ jobId, currentStatus, className }) {
         </div>
 
         <Button 
-          onClick={handleStatusUpdate} 
+          onClick={() => handleStatusUpdate(status)} 
           disabled={isUpdating || !notes.trim() || status === currentStatus}
           className="w-full"
         >

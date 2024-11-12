@@ -11,36 +11,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 
 export default function PartsManager({ jobId }) {
   const queryClient = useQueryClient();
   const [selectedPart, setSelectedPart] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
-  const { data: inventory, isLoading: isLoadingInventory } = useQuery({
+  const { data: inventoryData, isLoading: isLoadingInventory } = useQuery({
     queryKey: ['inventory'],
-    queryFn: () => api.getInventory()
+    queryFn: () => api.inventory.getAll()
   });
 
-  const addPartMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await api.addPartToJob(jobId, data);
-      if (!response.success) {
-        throw new Error(response.message);
-      }
-      return response;
-    },
+  const installPartMutation = useMutation({
+    mutationFn: (partData) => api.jobs.addPart(jobId, partData),
     onSuccess: () => {
       queryClient.invalidateQueries(['job', jobId]);
-      queryClient.invalidateQueries(['jobParts', jobId]);
-      queryClient.invalidateQueries(['inventory']);
-      setSelectedPart(null);
-      setQuantity(1);
-      toast.success('Part added successfully');
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to add part');
+      toast.success('Part installed successfully');
+    }
+  });
+
+  const returnPartMutation = useMutation({
+    mutationFn: ({ partId, reason }) => api.jobs.returnPart(jobId, partId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['job', jobId]);
+      toast.success('Part returned successfully');
     }
   });
 
@@ -48,7 +43,7 @@ export default function PartsManager({ jobId }) {
     e.preventDefault();
     if (!selectedPart) return;
 
-    addPartMutation.mutate({
+    installPartMutation.mutate({
       inventoryId: selectedPart.id,
       quantity
     });
@@ -61,16 +56,16 @@ export default function PartsManager({ jobId }) {
           <Select
             value={selectedPart?.id || ''}
             onValueChange={(value) => {
-              const part = inventory?.data?.find(p => p.id === value);
+              const part = inventoryData.find(p => p.id === value);
               setSelectedPart(part);
             }}
-            disabled={addPartMutation.isPending || isLoadingInventory}
+            disabled={installPartMutation.isPending || isLoadingInventory}
           >
             <SelectTrigger>
               <SelectValue placeholder={isLoadingInventory ? "Loading..." : "Select Part"} />
             </SelectTrigger>
             <SelectContent>
-              {inventory?.data?.map(part => (
+              {inventoryData.map(part => (
                 <SelectItem 
                   key={part.id} 
                   value={part.id}
@@ -90,7 +85,7 @@ export default function PartsManager({ jobId }) {
             value={quantity}
             onChange={(e) => setQuantity(parseInt(e.target.value))}
             placeholder="Quantity"
-            disabled={addPartMutation.isPending}
+            disabled={installPartMutation.isPending}
           />
         </div>
 
@@ -104,18 +99,18 @@ export default function PartsManager({ jobId }) {
 
         <Button 
           type="submit" 
-          disabled={!selectedPart || quantity < 1 || addPartMutation.isPending || selectedPart?.quantity <= 0}
+          disabled={!selectedPart || quantity < 1 || installPartMutation.isPending || selectedPart?.quantity <= 0}
           className="w-full"
         >
-          {addPartMutation.isPending ? (
+          {installPartMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Adding Part...
+              Installing Part...
             </>
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Add Part
+              Install Part
             </>
           )}
         </Button>

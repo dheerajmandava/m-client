@@ -71,7 +71,7 @@ export default function SupplierDetailsDialog({ supplier, open, onOpenChange }) 
           </TabsContent>
 
           <TabsContent value="orders">
-            {!orders?.data?.length ? (
+            {!orders.length ? (
               <div className="text-center py-6 text-muted-foreground">
                 No orders found.
               </div>
@@ -87,7 +87,7 @@ export default function SupplierDetailsDialog({ supplier, open, onOpenChange }) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.data.map((order) => (
+                  {orders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell>{order.id}</TableCell>
                       <TableCell>
@@ -112,7 +112,7 @@ export default function SupplierDetailsDialog({ supplier, open, onOpenChange }) 
           </TabsContent>
 
           <TabsContent value="inventory">
-            {!inventory?.data?.length ? (
+            {!inventory.length ? (
               <div className="text-center py-6 text-muted-foreground">
                 No inventory items found.
               </div>
@@ -127,7 +127,7 @@ export default function SupplierDetailsDialog({ supplier, open, onOpenChange }) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inventory.data.map((item) => (
+                  {inventory.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.partNumber}</TableCell>
                       <TableCell>{item.description}</TableCell>

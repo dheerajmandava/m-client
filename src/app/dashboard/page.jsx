@@ -14,26 +14,28 @@ import StatsCard from '@/components/dashboard/StatsCard'
 import RecentJobsList from '@/components/dashboard/RecentJobsList'
 import UpcomingJobs from '@/components/dashboard/UpcomingJobs'
 import WelcomeSection from '@/components/dashboard/WelcomeSection'
-import { api } from '@/lib/api'
+import { api } from '@/lib/api/index'
 
 export default function DashboardPage() {
   const router = useRouter()
 
   const { data: shop, isLoading: shopLoading } = useQuery({
     queryKey: ['shop'],
-    queryFn: () => api.getShopProfile()
+    queryFn: () => api.shops.getProfile()
   })
 
-  const { data: jobsData, isLoading: jobsLoading } = useQuery({
+  const { data: jobsResponse, isLoading: jobsLoading } = useQuery({
     queryKey: ['jobs'],
-    queryFn: () => api.getJobCards()
+    queryFn: () => api.jobs.getAll()
   })
 
   const loading = shopLoading || jobsLoading
-  const hasShop = shop
+  const hasShop = shop?.success
+
+  // Get jobs array from response
+  const jobs = jobsResponse || []
 
   // Calculate job statistics from jobs data
-  const jobs = jobsData?.data || []
   const jobStats = jobs.reduce((stats, job) => {
     stats.total++
     switch (job.status) {

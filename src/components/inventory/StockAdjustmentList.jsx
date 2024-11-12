@@ -77,7 +77,7 @@ export default function StockAdjustmentList({ inventoryId }) {
         </Popover>
       </div>
 
-      {!adjustments?.data?.length ? (
+      {!adjustments.length ? (
         <div className="text-center py-6 text-muted-foreground">
           No adjustments found.
         </div>
@@ -94,7 +94,7 @@ export default function StockAdjustmentList({ inventoryId }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {adjustments.data.map((adjustment) => (
+            {adjustments.map((adjustment) => (
               <TableRow key={adjustment.id}>
                 <TableCell>
                   {format(new Date(adjustment.createdAt), "MMM d, yyyy")}

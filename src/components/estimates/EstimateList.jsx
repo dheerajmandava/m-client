@@ -5,10 +5,9 @@ import { Eye, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { toast } from 'sonner';
 import { generateEstimatePDF } from '@/lib/pdfGenerator';
-import { useShop } from '@/contexts/ShopContext';
 
 const statusColors = {
   DRAFT: 'default',
@@ -19,10 +18,12 @@ const statusColors = {
 };
 
 export default function EstimateList({ jobId, onViewEstimate }) {
-  const { data: estimates, isLoading } = useQuery({
+  const { data: estimatesResponse, isLoading } = useQuery({
     queryKey: ['estimates', jobId],
-    queryFn: () => api.getJobEstimates(jobId)
+    queryFn: () => api.estimates.getJobEstimates(jobId)
   });
+
+  const estimates = estimatesResponse || [];
 
   const [generatingPDF, setGeneratingPDF] = useState(null);
 
@@ -30,30 +31,22 @@ export default function EstimateList({ jobId, onViewEstimate }) {
     try {
       setGeneratingPDF(estimate.id);
       
-      // Fetch shop data
-      const shopResponse = await api.getShopProfile();
-      if (!shopResponse.success) {
-        throw new Error(shopResponse.message || 'Failed to fetch shop details');
-      }
+      const [shopResponse, jobResponse] = await Promise.all([
+        api.shops.getProfile(),
+        api.jobs.get(estimate.jobCardId)
+      ]);
 
-      // Get job card details
-      const jobResponse = await api.getJobCard(estimate.jobCardId);
-      if (!jobResponse.success) {
-        throw new Error('Failed to fetch job details');
-      }
-
-      // Combine the data
       const estimateWithJob = {
         ...estimate,
-        jobCard: jobResponse.data
+        jobCard: jobResponse
       };
 
-      const doc = generateEstimatePDF(estimateWithJob, shopResponse.data);
+      const doc = generateEstimatePDF(estimateWithJob, shopResponse);
       doc.save(`${estimate.estimateNumber}.pdf`);
       toast.success('PDF generated successfully');
     } catch (error) {
       console.error('PDF generation error:', error);
-      toast.error(`Failed to generate PDF: ${error.message}`);
+      toast.error(error.message);
     } finally {
       setGeneratingPDF(null);
     }
@@ -63,13 +56,13 @@ export default function EstimateList({ jobId, onViewEstimate }) {
     return <div>Loading estimates...</div>;
   }
 
-  if (!estimates?.data || estimates.data.length === 0) {
+  if (!estimates || estimates.length === 0) {
     return <div className="text-muted-foreground">No estimates found</div>;
   }
 
   return (
     <div className="space-y-4">
-      {estimates.data.map((estimate) => (
+      {estimates.map((estimate) => (
         <Card key={estimate.id}>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">

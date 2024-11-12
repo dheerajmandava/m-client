@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select"
 import JobCard from '@/components/jobs/JobCard'
 import JobsLoadingSkeleton from '@/components/jobs/JobsLoadingSkeleton'
-import { api } from '@/lib/api'
+import { api } from '@/lib/api/index'
 
 export default function JobsPage() {
   const router = useRouter()
@@ -26,12 +26,11 @@ export default function JobsPage() {
   })
 
   // Fetch jobs data
-  const { data: jobsData, isLoading } = useQuery({
+  const { data: jobs = [], isLoading } = useQuery({
     queryKey: ['jobs'],
-    queryFn: () => api.getJobCards()
+    queryFn: () => api.jobs.getAll()
   })
-
-  const jobs = jobsData?.data || []
+  console.log('jobsData', jobs)
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }))

@@ -30,7 +30,7 @@ export default function SuppliersList() {
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: api.getSuppliers
+    queryFn: () => api.suppliers.getAll()
   });
 
   if (isLoading) {
@@ -40,12 +40,12 @@ export default function SuppliersList() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {!suppliers?.data?.length ? (
+        {!suppliers.length ? (
           <div className="col-span-full text-center py-6 text-muted-foreground">
             No suppliers found.
           </div>
         ) : (
-          suppliers.data.map((supplier) => (
+          suppliers.map((supplier) => (
             <Card key={supplier.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-start">

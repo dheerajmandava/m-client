@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useForm } from 'react-hook-form';
 
 const initialJobData = {
   customerName: '',
@@ -16,27 +17,35 @@ const initialJobData = {
   estimatedCost: ''
 };
 
-export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
-  const [jobData, setJobData] = useState(initialJobData);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!jobData.customerName || !jobData.vehicleMake || !jobData.registrationNo) {
-      return onSubmit(null, 'Please fill in all required fields');
+export function JobCardForm({ onSubmit, initialData, isSubmitting, error, submitButton }) {
+  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+    defaultValues: {
+      customerName: initialData?.customerName || '',
+      customerPhone: initialData?.customerPhone || '',
+      customerEmail: initialData?.customerEmail || '',
+      vehicleMake: initialData?.vehicleMake || '',
+      vehicleModel: initialData?.vehicleModel || '',
+      vehicleYear: initialData?.vehicleYear || '',
+      registrationNo: initialData?.registrationNo || '',
+      mileage: initialData?.mileage || '',
+      description: initialData?.description || '',
+      estimatedCost: initialData?.estimatedCost || ''
     }
+  });
 
-    onSubmit(jobData);
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setJobData(prev => ({ ...prev, [name]: value }));
+  const handleFormSubmit = async (data) => {
+    const formattedData = {
+      ...data,
+      mileage: data.mileage?.toString(),
+      vehicleYear: data.vehicleYear?.toString(),
+      estimatedCost: parseFloat(data.estimatedCost || 0)
+    };
+    
+    await onSubmit(formattedData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Customer Details */}
         <div className="space-y-4">
@@ -46,8 +55,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             <Input
               id="customerName"
               name="customerName"
-              value={jobData.customerName}
-              onChange={handleChange}
+              {...register('customerName')}
               disabled={isSubmitting}
               required
             />
@@ -57,8 +65,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             <Input
               id="customerPhone"
               name="customerPhone"
-              value={jobData.customerPhone}
-              onChange={handleChange}
+              {...register('customerPhone')}
               disabled={isSubmitting}
             />
           </div>
@@ -68,8 +75,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
               id="customerEmail"
               name="customerEmail"
               type="email"
-              value={jobData.customerEmail}
-              onChange={handleChange}
+              {...register('customerEmail')}
               disabled={isSubmitting}
             />
           </div>
@@ -83,8 +89,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             <Input
               id="vehicleMake"
               name="vehicleMake"
-              value={jobData.vehicleMake}
-              onChange={handleChange}
+              {...register('vehicleMake')}
               disabled={isSubmitting}
               required
             />
@@ -94,8 +99,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             <Input
               id="vehicleModel"
               name="vehicleModel"
-              value={jobData.vehicleModel}
-              onChange={handleChange}
+              {...register('vehicleModel')}
               disabled={isSubmitting}
             />
           </div>
@@ -105,8 +109,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
               <Input
                 id="vehicleYear"
                 name="vehicleYear"
-                value={jobData.vehicleYear}
-                onChange={handleChange}
+                {...register('vehicleYear')}
                 disabled={isSubmitting}
               />
             </div>
@@ -116,8 +119,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
                 id="mileage"
                 name="mileage"
                 type="number"
-                value={jobData.mileage}
-                onChange={handleChange}
+                {...register('mileage')}
                 disabled={isSubmitting}
               />
             </div>
@@ -127,8 +129,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             <Input
               id="registrationNo"
               name="registrationNo"
-              value={jobData.registrationNo}
-              onChange={handleChange}
+              {...register('registrationNo')}
               disabled={isSubmitting}
               required
             />
@@ -144,8 +145,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
           <Textarea
             id="description"
             name="description"
-            value={jobData.description}
-            onChange={handleChange}
+            {...register('description')}
             disabled={isSubmitting}
             rows={4}
           />
@@ -156,8 +156,7 @@ export function JobCardForm({ onSubmit, isSubmitting, error, submitButton }) {
             id="estimatedCost"
             name="estimatedCost"
             type="number"
-            value={jobData.estimatedCost}
-            onChange={handleChange}
+            {...register('estimatedCost')}
             disabled={isSubmitting}
           />
         </div>

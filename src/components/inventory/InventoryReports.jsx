@@ -34,11 +34,11 @@ export default function InventoryReports() {
       switch(type) {
         case 'inventory':
           filename = `inventory-report-${new Date().toISOString().split('T')[0]}.csv`;
-          data = generateInventoryReport(inventory.data, orders.data);
+          data = generateInventoryReport(inventory, orders);
           break;
         case 'orders':
           filename = `orders-report-${new Date().toISOString().split('T')[0]}.csv`;
-          data = orders.data.map(order => ({
+          data = orders.map(order => ({
             'Order ID': order.id,
             'Date': new Date(order.createdAt).toLocaleDateString(),
             'Supplier': order.supplier.name,
@@ -61,7 +61,7 @@ export default function InventoryReports() {
   const sendLowStockNotifications = async () => {
     setIsSendingNotifications(true);
     try {
-      const lowStockItems = inventory.data.filter(item => item.quantity <= item.minQuantity);
+      const lowStockItems = inventory.filter(item => item.quantity <= item.minQuantity);
       await api.sendLowStockNotifications(lowStockItems);
       toast.success('Low stock notifications sent successfully');
     } catch (error) {

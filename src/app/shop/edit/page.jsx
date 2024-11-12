@@ -29,7 +29,7 @@ export default function EditShopPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: (data) => api.updateShopProfile(data),
+    mutationFn: (data) => api.shops.update(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['shop']);
       toast.success('Shop profile updated successfully');
@@ -42,12 +42,12 @@ export default function EditShopPage() {
 
   // Populate form with current data
   useEffect(() => {
-    if (shopData?.success && shopData.data) {
+    if (shopData) {
       setFormData({
-        name: shopData.data.name || '',
-        email: shopData.data.email || '',
-        phone: shopData.data.phone || '',
-        address: shopData.data.address || ''
+        name: shopData.name || '',
+        email: shopData.email || '',
+        phone: shopData.phone || '',
+        address: shopData.address || ''
       });
     }
   }, [shopData]);

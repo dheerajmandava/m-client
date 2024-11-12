@@ -137,7 +137,7 @@ export default function CreateOrderDialog({ open, onOpenChange }) {
                 <SelectValue placeholder="Select a supplier" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers?.data?.map(supplier => (
+                {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
                   </SelectItem>

@@ -1,5 +1,25 @@
 import axiosClient from './axiosClient';
 
+const handleApiError = (error, defaultMessage) => {
+  // Check for network errors first
+  if (error.message === 'Network Error') {
+    return {
+      success: false,
+      message: 'Unable to connect to server. Please check your internet connection.',
+      error: {
+        code: 'NETWORK_ERROR',
+        details: error.message
+      }
+    };
+  }
+
+  return {
+    success: false,
+    message: error.response?.data?.message || defaultMessage,
+    error: error.response?.data?.error || error.message
+  };
+};
+
 export const api = {
   async getMechanics() {
     try {
@@ -64,39 +84,27 @@ export const api = {
 
   async getJobCards() {
     try {
-      const response = await axiosClient.get('/job-cards');
-      return {
-        success: true,
-        data: response.data.data || [],
-        message: 'Jobs retrieved successfully'
-      };
-    } catch (error) {
-      console.error('Error fetching job cards:', error);
-      return {
-        success: false,
-        data: [],
-        message: error.response?.data?.message || 'Failed to fetch jobs'
-      };
-    }
-  },
-
-  async getJobCard(id) {
-    try {
-      const response = await axiosClient.get(`/job-cards/${id}`);
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
+      const response = await axiosClient.get('/jobs');
       return {
         success: true,
         data: response.data.data
       };
     } catch (error) {
-      console.error('Get job card error:', error.response?.data || error);
+      console.error('Error fetching job cards:', error);
+      return handleApiError(error, 'Failed to fetch job cards');
+    }
+  },
+
+  async getJobCard(id) {  
+    try {
+      const response = await axiosClient.get(`/jobs/${id}`);
       return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to fetch job details',
-        error: error.response?.data?.error || error.message
+        success: true,
+        data: response.data.data
       };
+    } catch (error) {
+      console.error('Error fetching job card:', error);
+      return handleApiError(error, 'Failed to fetch job card');
     }
   },
 
@@ -113,7 +121,7 @@ export const api = {
 
       console.log('Formatted job data:', formattedData);
       
-      const response = await axiosClient.post('/job-cards', formattedData);
+      const response = await axiosClient.post('/jobs', formattedData);
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
@@ -247,8 +255,8 @@ export const api = {
   async getScheduledJobs({ date } = {}) {
     try {
       const url = date 
-        ? `/job-cards/scheduled?date=${date}`
-        : '/job-cards/scheduled';
+        ? `/jobs/scheduled?date=${date}`
+        : '/jobs/scheduled';
       
       const response = await axiosClient.get(url);
       if (!response.data.success) {
@@ -273,7 +281,7 @@ export const api = {
   async getJobsByDate(date) {
     try {
       const formattedDate = date.toISOString().split('T')[0];
-      const response = await axiosClient.get(`/job-cards/by-date/${formattedDate}`);
+      const response = await axiosClient.get(`/jobs/by-date/${formattedDate}`);
       return {
         success: true,
         data: response.data.data || [],
@@ -308,7 +316,7 @@ export const api = {
 
   async updateJobStatus(jobId, data) {
     try {
-      const response = await axiosClient.patch(`/job-cards/${jobId}/status`, {
+      const response = await axiosClient.patch(`/jobs/${jobId}/status`, {
         status: data.status,
         notes: data.notes
       });
@@ -334,7 +342,7 @@ export const api = {
 
   async addJobNote(jobId, note) {
     try {
-      const response = await axiosClient.post(`/job-cards/${jobId}/notes`, { note });
+      const response = await axiosClient.post(`/jobs/${jobId}/notes`, { note });
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
@@ -361,7 +369,7 @@ export const api = {
         estimatedCost: parseFloat(jobData.estimatedCost || 0)
       };
 
-      const response = await axiosClient.put(`/job-cards/${id}`, formattedData);
+      const response = await axiosClient.put(`/jobs/${id}`, formattedData);
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
@@ -383,7 +391,7 @@ export const api = {
 
   async deleteJobCard(id) {
     try {
-      const response = await axiosClient.delete(`/job-cards/${id}`);
+      const response = await axiosClient.delete(`/jobs/${id}`);
      
       if (!response.data.success) {
         throw new Error(response.data.message);
@@ -417,7 +425,7 @@ export const api = {
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
-      
+
       return {
         success: true,
         data: response.data.data,
@@ -435,7 +443,7 @@ export const api = {
 
   async addPartToJob(jobId, partData) {
     try {
-      const response = await axiosClient.post(`/job-cards/${jobId}/parts`, partData);
+      const response = await axiosClient.post(`/jobs/${jobId}/parts`, partData);
       return {
         success: true,
         data: response.data.data
@@ -450,7 +458,7 @@ export const api = {
 
   async addJobCost(jobId, costData) {
     try {
-      const response = await axiosClient.post(`/job-cards/${jobId}/costs`, costData);
+      const response = await axiosClient.post(`/jobs/${jobId}/costs`, costData);
       return {
         success: true,
         data: response.data.data
@@ -771,14 +779,14 @@ export const api = {
   },
 
   getInventorySettings: async () => {
-    const response = await axiosClient.get('/api/inventory/settings');
+    const response = await axiosClient.get('/inventory/settings');
     if (!response.ok) throw new Error('Failed to fetch inventory settings');
     return response.json();
   },
 
   async getJobParts(jobId) {
     try {
-      const response = await axiosClient.get(`/job-cards/${jobId}/parts`);
+      const response = await axiosClient.get(`/jobs/${jobId}/parts`);
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Failed to fetch parts');
       }
@@ -790,7 +798,7 @@ export const api = {
 
   async installJobPart(jobId, partId) {
     try {
-      const response = await axiosClient.post(`/job-cards/${jobId}/parts/${partId}/install`);
+      const response = await axiosClient.post(`/jobs/${jobId}/parts/${partId}/install`);
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Failed to install part');
       }
@@ -802,7 +810,7 @@ export const api = {
 
   async returnJobPart(jobId, partId, reason) {
     try {
-      const response = await axiosClient.post(`/job-cards/${jobId}/parts/${partId}/return`, { reason });
+      const response = await axiosClient.post(`/jobs/${jobId}/parts/${partId}/return`, { reason });
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Failed to return part');
       }
@@ -814,7 +822,7 @@ export const api = {
 
   async removeJobPart(jobId, partId) {
     try {
-      const response = await axiosClient.delete(`/job-cards/${jobId}/parts/${partId}`);
+      const response = await axiosClient.delete(`/jobs/${jobId}/parts/${partId}`);
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
@@ -899,6 +907,26 @@ export const api = {
         success: false,
         message: error.response?.data?.message || 'Failed to update estimate status',
         error: error.message
+      };
+    }
+  },
+
+  async getAllJobCards() {
+    try {
+      const response = await axiosClient.get('/jobs');
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      console.error('Get all jobs error:', error.response?.data || error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch jobs',
+        error: error.response?.data?.error || error.message
       };
     }
   }

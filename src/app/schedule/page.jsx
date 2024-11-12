@@ -9,7 +9,7 @@ import {
   useReactTable,
   getSortedRowModel,
 } from '@tanstack/react-table';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -37,24 +37,18 @@ export default function SchedulePage() {
   const [sorting, setSorting] = useState([]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  // Query for fetching jobs
-  const { data: jobsData, isLoading } = useQuery({
-    queryKey: ['scheduledJobs', selectedDate?.toISOString()?.split('T')[0] || 'all'],
-    queryFn: async () => {
-      if (!selectedDate) {
-        return api.getScheduledJobs();
-      }
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-      return api.getScheduledJobs({ date: formattedDate });
-    },
-    staleTime: 1000 * 60 * 5,
+  const { data: jobsResponse, isLoading } = useQuery({
+    queryKey: ['jobs', selectedDate],
+    queryFn: () => api.schedule.getSchedule(selectedDate)
   });
+
+  const jobsData = jobsResponse || [];
 
   // Create stable reference for the data
   const scheduledJobs = useMemo(() => {
-    const jobs = jobsData?.data || [];
+    const jobs = jobsData || [];
     return [...jobs].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
-  }, [jobsData?.data]);
+  }, [jobsData]);
 
   // Table columns with stable reference
   const columns = useMemo(() => [
@@ -143,7 +137,7 @@ export default function SchedulePage() {
         <div>
           <h1 className="text-2xl font-semibold">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {jobsData?.data?.length || 0} jobs scheduled 
+            {isLoading ? 'Loading...' : `${jobsData.length || 0} jobs scheduled`}
             {selectedDate ? ` for ${format(selectedDate, "MMMM d, yyyy")}` : ' in total'}
           </p>
         </div>

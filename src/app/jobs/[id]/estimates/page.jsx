@@ -1,28 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CreateEstimateForm from '@/components/estimates/CreateEstimateForm';
 import EstimateList from '@/components/estimates/EstimateList';
-import EstimateDetailsDialog from '@/components/estimates/EstimateDetailsDialog';
-import { api } from '@/lib/api';
+import EstimateDetailsDialog from '@/components/estimates/EstimateDetailsDialog';  
+import { toast } from 'sonner';
+import { api } from '@/lib/api/index';
 
 export default function JobEstimatesPage({ params }) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
 
-  const { data: jobData } = useQuery({
+  const { data: jobResponse } = useQuery({
     queryKey: ['job', params.id],
-    queryFn: () => api.getJobCard(params.id)
+    queryFn: () => api.jobs.get(params.id)
   });
 
-  const { data: estimates, refetch: refetchEstimates } = useQuery({
+  const job = jobResponse;
+
+  const { data: estimatesResponse, refetch: refetchEstimates } = useQuery({
     queryKey: ['estimates', params.id],
-    queryFn: () => api.getJobEstimates(params.id)
+    queryFn: () => api.estimates.getJobEstimates(params.id),
+    enabled: !!params.id
+  });
+
+  const createEstimateMutation = useMutation({
+    mutationFn: (data) => api.estimates.create(params.id, data),
+    onSuccess: () => {
+      refetchEstimates();
+      setIsCreateDialogOpen(false);
+      toast.success('Estimate created successfully');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
   });
 
   const handleEstimateCreated = async () => {
@@ -45,7 +61,7 @@ export default function JobEstimatesPage({ params }) {
         <div>
           <h1 className="text-2xl font-bold">Estimates</h1>
           <p className="text-muted-foreground">
-            Job #{jobData?.data?.jobNumber} - {jobData?.data?.customerName}
+            Job #{job?.jobNumber} - {job?.customerName}
           </p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -63,17 +79,17 @@ export default function JobEstimatesPage({ params }) {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <h4 className="text-sm font-medium text-muted-foreground">Vehicle</h4>
-              <p>{jobData?.data?.vehicleMake} {jobData?.data?.vehicleModel}</p>
-              <p className="text-sm text-muted-foreground">{jobData?.data?.registrationNo}</p>
+              <p>{job?.vehicleMake} {job?.vehicleModel}</p>
+              <p className="text-sm text-muted-foreground">{job?.registrationNo}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-muted-foreground">Customer</h4>
-              <p>{jobData?.data?.customerName}</p>
-              <p className="text-sm text-muted-foreground">{jobData?.data?.customerPhone}</p>
+              <p>{job?.customerName}</p>
+              <p className="text-sm text-muted-foreground">{job?.customerPhone}</p>
             </div>
             <div>
               <h4 className="text-sm font-medium text-muted-foreground">Description</h4>
-              <p className="text-sm">{jobData?.data?.description}</p>
+              <p className="text-sm">{job?.description}</p>
             </div>
           </div>
         </CardContent>

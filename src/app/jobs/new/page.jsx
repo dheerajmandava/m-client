@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { JobCardForm } from '@/components/jobs/JobCardForm';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 
 const formatJobData = (data) => ({
   ...data,
@@ -22,26 +22,18 @@ export default function NewJobPage() {
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data) => api.createJobCard(formatJobData(data)),
-    onSuccess: (result) => {
-      if (!result.success) {
-        throw new Error(result.message);
-      }
+  const createMutation = useMutation({
+    mutationFn: (data) => api.jobs.create(formatJobData(data)),
+    onSuccess: (response) => {
       queryClient.invalidateQueries(['jobs']);
-      toast.success('Job card created successfully');
-      router.push('/jobs');
-    },
-    onError: (error) => {
-      const message = error.message || 'Failed to create job card';
-      setError(message);
-      toast.error(message);
+      toast.success('Job created successfully');
+      router.push(`/jobs/${response.data.id}`);
     }
   });
 
   const handleSubmit = (formData) => {
     setError('');
-    mutate(formData);
+    createMutation.mutate(formData);
   };
 
   return (
@@ -53,7 +45,7 @@ export default function NewJobPage() {
         <CardContent>
           <JobCardForm
             onSubmit={handleSubmit}
-            isSubmitting={isPending}
+            isSubmitting={createMutation.isPending}
             error={error}
             submitButton={
               <div className="flex justify-end gap-4">
@@ -61,12 +53,12 @@ export default function NewJobPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.push('/jobs')}
-                  disabled={isPending}
+                  disabled={createMutation.isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? (
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...

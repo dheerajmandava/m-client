@@ -1,34 +1,30 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { api } from '@/lib/api/index';
 
-export default function JobNotes({ jobId, notes = [], onAddNote, isLoading }) {
+export default function JobNotes({ jobId, notes = [] }) {
   const [newNote, setNewNote] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleSubmit = async () => {
-    if (!newNote.trim()) {
-      toast.error('Please enter a note');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await onAddNote(newNote);
+  const addNoteMutation = useMutation({
+    mutationFn: (note) => api.jobs.addNote(jobId, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['job', jobId]);
       setNewNote('');
       toast.success('Note added successfully');
-    } catch (error) {
+    },
+    onError: (error) => {
       toast.error(error.message || 'Failed to add note');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  });
 
-  if (isLoading) {
+  if (addNoteMutation.isLoading) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -74,18 +70,11 @@ export default function JobNotes({ jobId, notes = [], onAddNote, isLoading }) {
             className="min-h-[100px] resize-none"
           />
           <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !newNote.trim()}
+            onClick={() => addNoteMutation.mutate(newNote)}
+            disabled={!newNote.trim()}
             className="w-full"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding Note...
-              </>
-            ) : (
-              'Add Note'
-            )}
+            Add Note
           </Button>
         </div>
       </CardContent>

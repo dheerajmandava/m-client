@@ -1,8 +1,11 @@
 'use client'
+import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -14,28 +17,20 @@ import {
   Calendar,
   Users
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import { api } from '@/lib/api'
 
 export default function Layout({ children }) {
   const pathname = usePathname()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  const { getToken, isLoaded, userId } = useAuth()
-  const [hasShop, setHasShop] = useState(false)
+  const { isLoaded, userId } = useAuth()
 
-  useEffect(() => {
-    async function checkShopProfile() {
-      if (!isLoaded || !userId) return
-      try {
-        const token = await getToken()
-        const response = await api.getShopProfile(token)
-        setHasShop(!!response.data)
-      } catch (error) {
-        setHasShop(false)
-      }
-    }
-    checkShopProfile()
-  }, [isLoaded, userId, getToken])
+  const { data: shopData } = useQuery({
+    queryKey: ['shop'],
+    queryFn: () => api.shops.getProfile(),
+    enabled: !!userId,
+    retry: false
+  })
+
+  const hasShop = shopData?.success
 
   const navItems = [
     {

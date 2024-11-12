@@ -44,7 +44,7 @@ export default function InventoryList({ filterLowStock = false }) {
     return <div className="text-center py-4">Loading inventory...</div>;
   }
 
-  if (!inventory?.data?.length) {
+  if (!inventory.length) {
     return (
       <div className="text-center py-6 text-muted-foreground">
         {filterLowStock 
@@ -70,7 +70,7 @@ export default function InventoryList({ filterLowStock = false }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {inventory.data.map((item) => (
+          {inventory.map((item) => (
             <TableRow key={item.id}>
               <TableCell>{item.partNumber}</TableCell>
               <TableCell>{item.name}</TableCell>

@@ -2,9 +2,9 @@ export function calculateInventoryMetrics(inventory, orders) {
   const currentDate = new Date();
   const thirtyDaysAgo = new Date(currentDate.setDate(currentDate.getDate() - 30));
   
-  return inventory?.data?.map(item => {
+  return inventory.map(item => {
     // Get all orders containing this item
-    const itemOrders = orders?.data?.filter(order => 
+    const itemOrders = orders.filter(order => 
       order.items.some(orderItem => orderItem.partNumber === item.partNumber)
     ) || [];
 

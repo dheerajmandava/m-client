@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { useAuth } from '@clerk/nextjs';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,28 +30,24 @@ export default function ScheduleJobPage({ params }) {
   const [estimatedHours, setEstimatedHours] = useState('2');
 
   // Fetch job data
-  const { data: jobData, isLoading: jobLoading } = useQuery({
-    queryKey: ['jobs', params.id],
-    queryFn: () => api.getJobCard(params.id),
+  const { data: job, isLoading: jobLoading } = useQuery({
+    queryKey: ['job', params.id],
+    queryFn: () => api.jobs.get(params.id),
     enabled: !!params.id && isLoaded,
   });
 
   // Fetch mechanics data
-  const { data: mechanicsData, isLoading: mechanicsLoading } = useQuery({
+  const { data: mechanics = [], isLoading: mechanicsLoading } = useQuery({
     queryKey: ['mechanics'],
-    queryFn: api.getMechanics,
+    queryFn: () => api.mechanics.getAll(),
     enabled: isLoaded,
   });
 
   // Schedule mutation
   const scheduleMutation = useMutation({
-    mutationFn: (scheduleData) => api.scheduleJob(params.id, scheduleData),
-    onSuccess: (response) => {
-      if (!response.success) {
-        toast.error(response.message || 'Failed to schedule job');
-        return;
-      }
-      queryClient.invalidateQueries(['jobs']);
+    mutationFn: (scheduleData) => api.jobs.updateSchedule(params.id, scheduleData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['job', params.id]);
       toast.success('Job scheduled successfully');
       router.push(`/jobs/${params.id}`);
     },
@@ -79,10 +75,10 @@ export default function ScheduleJobPage({ params }) {
 
   // Log the job data when it changes
   useEffect(() => {
-    if (jobData) {
-      console.log('Job Data:', jobData);
+    if (job) {
+      console.log('Job Data:', job);
     }
-  }, [jobData]);
+  }, [job]);
 
   if (!isLoaded || jobLoading || mechanicsLoading) {
     return (
@@ -96,9 +92,6 @@ export default function ScheduleJobPage({ params }) {
       </div>
     );
   }
-
-  const job = jobData;
-  const mechanics = mechanicsData?.data || [];
 
   return (
     <div className="container mx-4 p-4 max-w-3xl">

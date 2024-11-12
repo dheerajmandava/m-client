@@ -24,8 +24,8 @@ export default function MechanicDetailsPage({ params }) {
   const router = useRouter();
 
   const { data: mechanic, isLoading } = useQuery({
-    queryKey: ['mechanics', params.id],
-    queryFn: () => api.getMechanic(params.id),
+    queryKey: ['mechanic', params.id],
+    queryFn: () => api.mechanics.getById(params.id),
   });
 
   if (isLoading) {
@@ -41,7 +41,7 @@ export default function MechanicDetailsPage({ params }) {
     );
   }
 
-  const mechanicData = mechanic?.data;
+  const mechanicData = mechanic;
 
   return (
     <div className="container mx-auto p-6">

@@ -60,7 +60,7 @@ export default function OrderDetailsDialog({ orderId, open, onOpenChange }) {
     );
   }
 
-  if (!order?.data) {
+  if (!order) {
     return null;
   }
 

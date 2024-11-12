@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { api } from '@/lib/api/index';
+import { Input } from '@/components/ui/input';
+import { DialogFooter } from '../ui/dialog';
+
 
 const timeSlots = Array.from({ length: 12 }, (_, i) => {
   const hour = i + 9;
@@ -16,33 +19,66 @@ const timeSlots = Array.from({ length: 12 }, (_, i) => {
   };
 });
 
-export default function EditScheduleForm({ job, mechanics, onClose }) {
+export default function EditScheduleForm({ jobId, currentSchedule, onClose }) {
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState(new Date(job.scheduledDate));
-  const [selectedTime, setSelectedTime] = useState(job.scheduledTime);
-  const [selectedMechanic, setSelectedMechanic] = useState(job.mechanic?.id);
-  const [estimatedHours, setEstimatedHours] = useState(
-    job.estimatedHours?.toString() || '1'
-  );
+  
+  if (!jobId) {
+    console.error('No jobId provided to EditScheduleForm');
+    return null;
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => api.updateJobSchedule(job.id, data),
-    onSuccess: (response) => {
-      if (!response.success) {
-        toast.error(response.message);
-        return;
-      }
-      queryClient.invalidateQueries(['job', job.id]);
+  const { data: mechanics = [], isLoading: isLoadingMechanics } = useQuery({
+    queryKey: ['mechanics'],
+    queryFn: () => api.mechanics.getAll()
+  });
+
+  const updateScheduleMutation = useMutation({
+    mutationFn: (data) => {
+      console.log('Mutation Data:', data);
+      return api.schedule.updateSchedule(jobId, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['job', jobId]);
       toast.success('Schedule updated successfully');
       onClose();
     },
     onError: (error) => {
+      console.error('Mutation Error:', error);
       toast.error(error.message || 'Failed to update schedule');
     }
   });
 
-  const handleSubmit = () => {
-    updateMutation.mutate({
+  const [selectedDate, setSelectedDate] = useState(
+    currentSchedule?.scheduledDate ? new Date(currentSchedule.scheduledDate) : new Date()
+  );
+  const [selectedTime, setSelectedTime] = useState(
+    currentSchedule?.scheduledTime || ''
+  );
+  const [selectedMechanic, setSelectedMechanic] = useState(
+    currentSchedule?.mechanicId?.toString() || ''
+  );
+  const [estimatedHours, setEstimatedHours] = useState(
+    currentSchedule?.estimatedHours?.toString() || '1'
+  );
+
+  console.log('Selected Mechanic:', selectedMechanic);
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+
+    console.log('Form Data:', {
+      date: selectedDate,
+      time: selectedTime,
+      mechanicId: selectedMechanic,
+      hours: estimatedHours
+    });
+
+    if (!selectedMechanic) {
+      toast.error('Please select a mechanic');
+      return;
+    }
+
+    updateScheduleMutation.mutate({
       scheduledDate: selectedDate,
       scheduledTime: selectedTime,
       mechanicId: selectedMechanic,
@@ -51,99 +87,94 @@ export default function EditScheduleForm({ job, mechanics, onClose }) {
   };
 
   return (
-    <div className="py-2 space-y-3">
-      <div className="grid grid-cols-2 gap-x-4">
-        {/* Left Column - Assignment */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Assignment</h3>
-            <div className="space-y-2">
-              <div>
-                <Label className="text-xs font-medium text-gray-600">Mechanic *</Label>
-                <Select value={selectedMechanic} onValueChange={setSelectedMechanic}>
-                  <SelectTrigger className="h-8 text-sm mt-0.5">
-                    <SelectValue placeholder="Select mechanic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mechanics.map((mechanic) => (
-                      <SelectItem key={mechanic.id} value={mechanic.id} className="text-sm">
-                        {mechanic.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs font-medium text-gray-600">Duration (hours) *</Label>
-                <Select value={estimatedHours} onValueChange={setEstimatedHours}>
-                  <SelectTrigger className="h-8 text-sm mt-0.5">
-                    <SelectValue placeholder="Select hours" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((hours) => (
-                      <SelectItem key={hours} value={hours.toString()} className="text-sm">
-                        {hours}h
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border mt-0.5"
+              disabled={(date) => date < new Date()}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Time</Label>
+            <Select
+              value={selectedTime}
+              onValueChange={setSelectedTime}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select time" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeSlots.map(slot => (
+                  <SelectItem key={slot.value} value={slot.value}>
+                    {slot.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Right Column - Schedule */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Schedule</h3>
-            <div className="space-y-2">
-              <div>
-                <Label className="text-xs font-medium text-gray-600">Date *</Label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="rounded-md border mt-0.5"
-                  disabled={(date) => date < new Date()}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-medium text-gray-600">Time Slot *</Label>
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger className="h-8 text-sm mt-0.5">
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timeSlots.map((slot) => (
-                      <SelectItem key={slot.value} value={slot.value} className="text-sm">
-                        {slot.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label>Mechanic</Label>
+          <Select
+            value={selectedMechanic}
+            onValueChange={(value) => {
+              console.log('Selected Value:', value);
+              setSelectedMechanic(value);
+            }}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select mechanic" />
+            </SelectTrigger>
+            <SelectContent>
+              {mechanics.map(mechanic => (
+                <SelectItem 
+                  key={mechanic.id} 
+                  value={mechanic.id.toString()}
+                >
+                  {mechanic.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Estimated Hours</Label>
+          <Input
+            type="number"
+            min="0.5"
+            step="0.5"
+            value={estimatedHours}
+            onChange={(e) => setEstimatedHours(e.target.value)}
+            required
+          />
         </div>
       </div>
 
-      <div className="flex justify-end pt-2 border-t mt-2">
-        <Button 
-          size="sm"
-          onClick={handleSubmit}
-          disabled={updateMutation.isPending}
-          className="h-8 text-sm px-4"
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
         >
-          {updateMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-              Updating...
-            </>
-          ) : (
-            'Update Schedule'
-          )}
+          Cancel
         </Button>
-      </div>
-    </div>
+        <Button 
+          type="submit"
+          disabled={updateScheduleMutation.isPending}
+        >
+          {updateScheduleMutation.isPending ? 'Updating...' : 'Update Schedule'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 } 
