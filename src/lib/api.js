@@ -179,11 +179,15 @@ export const api = {
   async getShopProfile() {
     try {
       const response = await axiosClient.get('/shops/profile');
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
       return {
         success: true,
         data: response.data.data
       };
     } catch (error) {
+      console.error('Get shop profile error:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch shop profile',

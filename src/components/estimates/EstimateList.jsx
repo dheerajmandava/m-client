@@ -25,16 +25,35 @@ export default function EstimateList({ jobId, onViewEstimate }) {
   });
 
   const [generatingPDF, setGeneratingPDF] = useState(null);
-  const { shop } = useShop();
 
   const handleGeneratePDF = async (estimate) => {
     try {
       setGeneratingPDF(estimate.id);
-      generateEstimatePDF(estimate, shop);
+      
+      // Fetch shop data
+      const shopResponse = await api.getShopProfile();
+      if (!shopResponse.success) {
+        throw new Error(shopResponse.message || 'Failed to fetch shop details');
+      }
+
+      // Get job card details
+      const jobResponse = await api.getJobCard(estimate.jobCardId);
+      if (!jobResponse.success) {
+        throw new Error('Failed to fetch job details');
+      }
+
+      // Combine the data
+      const estimateWithJob = {
+        ...estimate,
+        jobCard: jobResponse.data
+      };
+
+      const doc = generateEstimatePDF(estimateWithJob, shopResponse.data);
+      doc.save(`${estimate.estimateNumber}.pdf`);
       toast.success('PDF generated successfully');
     } catch (error) {
-      toast.error('Failed to generate PDF');
       console.error('PDF generation error:', error);
+      toast.error(`Failed to generate PDF: ${error.message}`);
     } finally {
       setGeneratingPDF(null);
     }
@@ -80,7 +99,7 @@ export default function EstimateList({ jobId, onViewEstimate }) {
                 <div className="text-sm text-muted-foreground">Total Amount</div>
                 <div className="font-semibold">₹{estimate.total.toFixed(2)}</div>
               </div>
-              <div className="flex justify-end items-center space-x-2">
+              <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"

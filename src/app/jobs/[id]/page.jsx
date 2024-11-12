@@ -10,6 +10,7 @@ import {
   Calendar, 
   Phone, 
   Mail, 
+  FileText,
   Settings, 
   Hash, 
   Clock, 
@@ -165,7 +166,15 @@ export default function JobDetailsPage({ params }) {
           </div>
         </div>
         
+
         <div className="flex items-center gap-2">
+        <Button 
+          variant="outline"
+          onClick={() => router.push(`/jobs/${params.id}/estimates`)}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Estimates
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
