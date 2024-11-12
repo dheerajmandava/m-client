@@ -5,31 +5,19 @@ class ShopsApi extends BaseApi {
     super(httpClient, '/shops');
   }
 
-  async getProfile() {
-    try {
-      const response = await this.client.get(`${this.endpoint}/profile`);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch shop profile');
-    }
+  async fetchProfile() {
+    const response = await super.get('/profile');
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const response = await this.client.post(this.endpoint, data);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to create shop');
-    }
+  async createShop(shopData) {
+    const response = await super.post('', shopData);
+    return response.data;
   }
 
-  async update(data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/profile`, data);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to update shop');
-    }
+  async updateProfile(shopData) {
+    const response = await super.put('/profile', shopData);
+    return response.data;
   }
 }
 

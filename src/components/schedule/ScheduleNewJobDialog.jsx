@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const timeSlots = Array.from({ length: 12 }, (_, i) => {
   const hour = i + 9;
@@ -16,26 +17,24 @@ const timeSlots = Array.from({ length: 12 }, (_, i) => {
 });
 
 export default function ScheduleNewJobDialog({ open, onOpenChange, onSubmit, mechanics = [] }) {
-  const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedMechanic, setSelectedMechanic] = useState('');
   const [estimatedHours, setEstimatedHours] = useState('1');
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  const availableMechanics = Array.isArray(mechanics) ? mechanics : [];
-
-  const { data: unscheduledJobs, isLoading } = useQuery({
+  const { mechanics: availableMechanics, isLoading: mechanicsLoading } = useMechanics();
+  const { assignJob, isAssigning } = useSchedule();
+  
+  const { data: unscheduledJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ['unscheduledJobs'],
-    queryFn: api.getUnscheduledJobs,
-    enabled: open // Only fetch when dialog is open
+    queryFn: () => api.jobs.fetchUnscheduled(),
+    enabled: open
   });
 
   useEffect(() => {
     if (open) {
-      // Reset form when dialog opens
       setSelectedJob('');
       setSelectedDate(new Date());
       setSelectedTime('');
@@ -44,8 +43,28 @@ export default function ScheduleNewJobDialog({ open, onOpenChange, onSubmit, mec
     }
   }, [open]);
 
-  const handleSubmit = async (data) => {
-    await onSubmit(data);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!selectedJob || !selectedDate || !selectedTime || !selectedMechanic) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    assignJob({
+      jobId: selectedJob,
+      scheduleData: {
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
+        mechanicId: selectedMechanic,
+        estimatedHours: parseFloat(estimatedHours)
+      }
+    }, {
+      onSuccess: () => {
+        onOpenChange(false);
+        onSubmit?.();
+      }
+    });
   };
 
   return (

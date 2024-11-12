@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -59,7 +58,9 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import { useJobDetails } from '@/hooks/useJobDetails';
 import { useJobParts } from '@/hooks/useJobParts';
+import { useMechanics } from '@/hooks/useMechanics';
 
 const statusStyles = {
   PENDING: "bg-yellow-50 text-yellow-700 border border-yellow-200",
@@ -90,32 +91,21 @@ const sectionStyles = {
 export default function JobDetailPage({ params }) {
   const router = useRouter();
   const { id } = params;
-  const queryClient = useQueryClient();
-
-  const { data: jobResponse, isLoading } = useQuery({
-    queryKey: ['job', id],
-    queryFn: () => api.jobs.get(id)
-  });
-
-  const job = jobResponse;
-
+  
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showScheduleEditDialog, setShowScheduleEditDialog] = useState(false);
 
-  const deleteMutation = useMutation({
-    mutationFn: () => api.jobs.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['jobs']);
-      toast.success('Job deleted successfully');
-      router.push('/jobs');
-    }
-  });
+  const { 
+    job, 
+    isLoading, 
+    error,
+    updateJob,
+    updateStatus,
+    deleteJob 
+  } = useJobDetails(id);
 
-  const { data: mechanics = [] } = useQuery({
-    queryKey: ['mechanics'],
-    queryFn: () => api.mechanics.getAll()
-  });
+  const { mechanics } = useMechanics();
 
   const { 
     parts, 
@@ -128,9 +118,8 @@ export default function JobDetailPage({ params }) {
     isReturning 
   } = useJobParts(id);
 
-  // Simple loading state while data is fetching
-  if (isLoading || !job) {
-    return null; // Or a simple loading spinner if you prefer
+  if (isLoading || partsLoading || !job) {
+    return null;
   }
 
   return (
@@ -337,8 +326,8 @@ export default function JobDetailPage({ params }) {
           <div className="w-[400px]">
             <JobStatusManager 
               jobId={job.id} 
-              currentStatus={job.status} 
-              className="h-full"
+              currentStatus={job.status}
+              onUpdateStatus={(status, notes) => updateStatus({ status, notes })}
             />
           </div>
           
@@ -363,7 +352,11 @@ export default function JobDetailPage({ params }) {
           </div>
           
           <div className="px-6 py-4 overflow-y-auto max-h-[calc(80vh-8rem)]">
-            <EditJobForm job={job} onClose={() => setShowEditDialog(false)} />
+            <EditJobForm 
+              job={job} 
+              onClose={() => setShowEditDialog(false)}
+              onUpdate={updateJob}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -380,6 +373,10 @@ export default function JobDetailPage({ params }) {
             <AlertDialogCancel className="rounded-md">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md"
+              onClick={() => {
+                deleteJob();
+                setShowDeleteDialog(false);
+              }}
             >
               Delete
             </AlertDialogAction>

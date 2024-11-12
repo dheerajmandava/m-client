@@ -1,14 +1,12 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, Calendar, ArrowLeft, Clock, User, Car } from 'lucide-react';
-import { api } from '@/lib/api';
+import { useMechanicDetails } from '@/hooks/useMechanicDetails';
 
-// Format date directly in component for now
 function formatJobDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -22,79 +20,55 @@ function formatJobDate(dateString) {
 
 export default function MechanicDetailsPage({ params }) {
   const router = useRouter();
+  const { id } = params;
 
-  const { data: mechanic, isLoading } = useQuery({
-    queryKey: ['mechanic', params.id],
-    queryFn: () => api.mechanics.getById(params.id),
-  });
+  const { 
+    mechanic, 
+    isLoading,
+    error,
+    updateMechanic,
+    removeMechanic 
+  } = useMechanicDetails(id);
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="text-center py-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto" />
-            <p className="mt-2">Loading mechanic details...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const mechanicData = mechanic;
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="container mx-auto p-6">
-      <Button 
-        variant="ghost" 
-        className="mb-4"
-        onClick={() => router.push('/mechanics')}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Mechanics
-      </Button>
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-bold">{mechanic.name}</h1>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Mechanic Info Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Mechanic Information</CardTitle>
+            <CardTitle>Contact Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold">{mechanicData.name}</h3>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                <span>{mechanicData.phone || 'No phone number'}</span>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span>{mechanic.phone}</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>{mechanicData.email || 'No email'}</span>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium mb-2">Specialties</h4>
-              <div className="flex flex-wrap gap-2">
-                {mechanicData.specialties.map((specialty) => (
-                  <Badge key={specialty} variant="secondary">
-                    {specialty}
-                  </Badge>
-                ))}
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span>{mechanic.email}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Scheduled Jobs Card */}
         <Card>
           <CardHeader>
             <CardTitle>Current Jobs</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mechanicData.jobs?.length > 0 ? (
-                mechanicData.jobs.map((job) => (
+              {mechanic.jobs?.length > 0 ? (
+                mechanic.jobs.map((job) => (
                   <div 
                     key={job.id} 
                     className="flex items-start space-x-4 p-3 rounded-lg border"

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { toast } from 'sonner';
 import {
   Table,
@@ -15,8 +15,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from 'lucide-react';
-import EditInventoryDialog from './EditInventoryDialog';
-import DeleteConfirmDialog from './DeleteConfirmDialog';
 
 export default function InventoryList({ filterLowStock = false }) {
   const queryClient = useQueryClient();
@@ -25,11 +23,13 @@ export default function InventoryList({ filterLowStock = false }) {
 
   const { data: inventory, isLoading } = useQuery({
     queryKey: ['inventory', { lowStock: filterLowStock }],
-    queryFn: () => filterLowStock ? api.getLowStockItems() : api.getInventory()
+    queryFn: () => filterLowStock ? api.inventory.getLowStock() : api.inventory.getAll()
   });
 
+  console.log('inventory', inventory);
+
   const deleteInventoryMutation = useMutation({
-    mutationFn: (id) => api.deleteInventoryItem(id),
+    mutationFn: (id) => api.inventory.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['inventory']);
       toast.success('Item deleted successfully');

@@ -5,58 +5,54 @@ class PartOrdersApi extends BaseApi {
     super(httpClient, '/part-orders');
   }
 
-  async getAll() {
-    try {
-      const response = await this.client.get(this.endpoint);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch part orders');
-    }
+  async fetchAll() {
+    const response = await super.get();
+    return response.data;
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch part order');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const response = await this.client.post(this.endpoint, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create part order');
-    }
+  async createOrder(orderData) {
+    const response = await super.post('', orderData);
+    return response.data;
   }
 
-  async update(id, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update part order');
-    }
+  async updateOrder(id, orderData) {
+    const response = await super.put(`/${id}`, orderData);
+    return response.data;
   }
 
-  async updateStatus(id, status) {
-    try {
-      const response = await this.client.patch(`${this.endpoint}/${id}/status`, { status });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update part order status');
-    }
+  async modifyStatus(id, status) {
+    const response = await super.patch(`/${id}/status`, { status });
+    return response.data;
   }
 
-  async delete(id) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${id}`);
-      return { success: true, message: 'Part order deleted successfully' };
-    } catch (error) {
-      return this.handleError(error, 'Failed to delete part order');
-    }
+  async removeOrder(id) {
+    const response = await super.delete(`/${id}`);
+    return response.data;
+  }
+
+  async fetchOrderItems(id) {
+    const response = await super.get(`/${id}/items`);
+    return response.data;
+  }
+
+  async addOrderItem(id, itemData) {
+    const response = await super.post(`/${id}/items`, itemData);
+    return response.data;
+  }
+
+  async updateOrderItem(orderId, itemId, itemData) {
+    const response = await super.put(`/${orderId}/items/${itemId}`, itemData);
+    return response.data;
+  }
+
+  async removeOrderItem(orderId, itemId) {
+    const response = await super.delete(`/${orderId}/items/${itemId}`);
+    return response.data;
   }
 }
 

@@ -18,9 +18,9 @@ export default function PartsManager({ jobId }) {
   const [selectedPart, setSelectedPart] = useState(null);
   const [quantity, setQuantity] = useState(1);
 
-  const { data: inventoryData, isLoading: isLoadingInventory } = useQuery({
+  const { data: inventoryItems = [], isLoading: isLoadingParts } = useQuery({
     queryKey: ['inventory'],
-    queryFn: () => api.inventory.getAll()
+    queryFn: () => api.inventory.getAll(),
   });
 
   const installPartMutation = useMutation({
@@ -28,14 +28,11 @@ export default function PartsManager({ jobId }) {
     onSuccess: () => {
       queryClient.invalidateQueries(['job', jobId]);
       toast.success('Part installed successfully');
-    }
-  });
-
-  const returnPartMutation = useMutation({
-    mutationFn: ({ partId, reason }) => api.jobs.returnPart(jobId, partId, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['job', jobId]);
-      toast.success('Part returned successfully');
+      setSelectedPart(null);
+      setQuantity(1);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to install part');
     }
   });
 
@@ -56,16 +53,17 @@ export default function PartsManager({ jobId }) {
           <Select
             value={selectedPart?.id || ''}
             onValueChange={(value) => {
-              const part = inventoryData.find(p => p.id === value);
+              const part = inventoryItems.find(p => p.id === value);
               setSelectedPart(part);
+              setQuantity(1);
             }}
-            disabled={installPartMutation.isPending || isLoadingInventory}
+            disabled={installPartMutation.isPending || isLoadingParts}
           >
             <SelectTrigger>
-              <SelectValue placeholder={isLoadingInventory ? "Loading..." : "Select Part"} />
+              <SelectValue placeholder={isLoadingParts ? "Loading..." : "Select Part"} />
             </SelectTrigger>
             <SelectContent>
-              {inventoryData.map(part => (
+              {inventoryItems.map(part => (
                 <SelectItem 
                   key={part.id} 
                   value={part.id}
@@ -83,14 +81,15 @@ export default function PartsManager({ jobId }) {
             min="1"
             max={selectedPart?.quantity || 1}
             value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             placeholder="Quantity"
-            disabled={installPartMutation.isPending}
+            disabled={installPartMutation.isPending || !selectedPart}
           />
         </div>
 
         {selectedPart && (
           <div className="text-sm text-gray-600">
+            <p>Part Number: {selectedPart.partNumber}</p>
             <p>Cost Price: ₹{selectedPart.costPrice}</p>
             <p>Selling Price: ₹{selectedPart.sellingPrice}</p>
             <p>Available: {selectedPart.quantity}</p>
@@ -105,12 +104,12 @@ export default function PartsManager({ jobId }) {
           {installPartMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Installing Part...
+              Adding Part...
             </>
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Install Part
+              Add Part
             </>
           )}
         </Button>

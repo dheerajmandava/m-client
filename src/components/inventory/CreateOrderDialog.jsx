@@ -34,9 +34,17 @@ export default function CreateOrderDialog({ open, onOpenChange }) {
   const [supplierId, setSupplierId] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: suppliers } = useQuery({
+  const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [orderItems, setOrderItems] = useState([{ partNumber: '', quantity: 1 }]);
+
+  const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: api.getSuppliers
+    queryFn: () => api.suppliers.getAll()
+  });
+
+  const { data: inventory = [] } = useQuery({
+    queryKey: ['inventory'],
+    queryFn: () => api.inventory.getAll()
   });
 
   const createOrderMutation = useMutation({
@@ -128,16 +136,13 @@ export default function CreateOrderDialog({ open, onOpenChange }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="supplier">Supplier</Label>
-            <Select
-              value={supplierId}
-              onValueChange={setSupplierId}
-            >
+            <Label>Supplier</Label>
+            <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a supplier" />
+                <SelectValue placeholder="Select supplier" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.map(supplier => (
+                {(suppliers || []).map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
                   </SelectItem>

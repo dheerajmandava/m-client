@@ -5,94 +5,70 @@ class JobsApi extends BaseApi {
     super(httpClient, '/jobs');
   }
 
-  async getAll() {
+  async fetchAll() {
+    console.log('JobsApi.fetchAll() called');
     try {
-      const response = await this.client.get(this.endpoint);
+      const response = await super.get();
+      console.log('JobsApi.fetchAll() response:', response);
       return response.data;
     } catch (error) {
-      throw this.handleError(error, 'Failed to fetch jobs');
+      console.error('JobsApi.fetchAll() error:', error);
+      throw error;
     }
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch job');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const formattedData = {
-        ...data,
-        mileage: data.mileage?.toString(),
-        vehicleYear: data.vehicleYear?.toString(),
-        estimatedCost: parseFloat(data.estimatedCost || 0)
-      };
-      const response = await this.client.post(this.endpoint, formattedData);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create job');
-    }
+  async createJob(data) {
+    const formattedData = {
+      ...data,
+      mileage: data.mileage?.toString(),
+      vehicleYear: data.vehicleYear?.toString(),
+      estimatedCost: parseFloat(data.estimatedCost || 0)
+    };
+    const response = await super.post('', formattedData);
+    return response.data;
   }
 
-  async update(id, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update job');
-    }
+  async updateJob(id, data) {
+    const response = await super.put(`/${id}`, data);
+    return response.data;
   }
 
-  async updateStatus(jobId, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${jobId}/status`, {
-        status: data.status,
-        notes: data.notes
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update job status');
-    }
+  async updateJobStatus(jobId, data) {
+    const response = await super.put(`/${jobId}/status`, {
+      status: data.status,
+      notes: data.notes
+    });
+    return response.data;
   }
 
-  async addNote(jobId, note) {
-    try {
-      const response = await this.client.post(`${this.endpoint}/${jobId}/notes`, { note });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to add note');
-    }
+  async fetchParts(jobId) {
+    const response = await super.get(`/${jobId}/parts`);
+    return response.data;
   }
 
-  async addPart(jobId, partData) {
-    try {
-      const response = await this.client.post(`${this.endpoint}/${jobId}/parts`, partData);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to add part');
-    }
+  async addJobPart(jobId, partData) {
+    const response = await super.post(`/${jobId}/parts`, partData);
+    return response.data;
   }
 
-  async returnPart(jobId, partId, reason) {
-    try {
-      const response = await this.client.post(`${this.endpoint}/${jobId}/parts/${partId}/return`, { reason });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to return part');
-    }
+  async installJobPart(jobId, partId) {
+    const response = await super.post(`/${jobId}/parts/${partId}/install`);
+    return response.data;
   }
 
-  async removePart(jobId, partId) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${jobId}/parts/${partId}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to remove part');
-    }
+  async returnJobPart(jobId, partId, reason) {
+    const response = await super.post(`/${jobId}/parts/${partId}/return`, { reason });
+    return response.data;
+  }
+
+  async removeJobPart(jobId, partId) {
+    const response = await super.delete(`/${jobId}/parts/${partId}`);
+    return response.data;
   }
 }
 

@@ -1,95 +1,33 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { 
-  Wrench, 
-  Clock, 
-  Timer, 
-  CheckCircle 
-} from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import StatsCard from '@/components/dashboard/StatsCard'
-import RecentJobsList from '@/components/dashboard/RecentJobsList'
-import UpcomingJobs from '@/components/dashboard/UpcomingJobs'
-import WelcomeSection from '@/components/dashboard/WelcomeSection'
-import { api } from '@/lib/api/index'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Wrench, Clock, Timer, CheckCircle, PlusCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import StatsCard from '@/components/dashboard/StatsCard';
+import WelcomeSection from '@/components/dashboard/WelcomeSection';
+import RecentJobsList from '@/components/dashboard/RecentJobsList';
+import UpcomingJobs from '@/components/dashboard/UpcomingJobs';
+import { useJobs } from '@/hooks/useJobs';
+import useDashboardStats from '@/hooks/useDashboardStats';
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const { jobs: allJobs, isLoading: jobsLoading } = useJobs();
+  const { stats, trends, isLoading: statsLoading } = useDashboardStats();
 
-  const { data: shop, isLoading: shopLoading } = useQuery({
-    queryKey: ['shop'],
-    queryFn: () => api.shops.getProfile()
-  })
+  if (jobsLoading || statsLoading) return <div>Loading...</div>;
 
-  const { data: jobsResponse, isLoading: jobsLoading } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => api.jobs.getAll()
-  })
+  // Calculate recent jobs (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const recentJobs = allJobs.filter(job => {
+    const date = new Date(job.createdAt);
+    return date >= thirtyDaysAgo;
+  });
 
-  const loading = shopLoading || jobsLoading
-  const hasShop = shop?.success
-
-  // Get jobs array from response
-  const jobs = jobsResponse || []
-
-  // Calculate job statistics from jobs data
-  const jobStats = jobs.reduce((stats, job) => {
-    stats.total++
-    switch (job.status) {
-      case 'PENDING':
-        stats.pending++
-        break
-      case 'IN_PROGRESS':
-        stats.inProgress++
-        break
-      case 'COMPLETED':
-        stats.completed++
-        break
-    }
-    return stats
-  }, {
-    total: 0,
-    pending: 0,
-    inProgress: 0,
-    completed: 0
-  })
-
-  // Calculate trends (last 30 days vs previous 30 days)
-  const now = new Date()
-  const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
-  const sixtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
-
-  const recentJobs = jobs.filter(job => new Date(job.createdAt) >= thirtyDaysAgo)
-  const previousJobs = jobs.filter(job => {
-    const date = new Date(job.createdAt)
-    return date >= sixtyDaysAgo && date < thirtyDaysAgo
-  })
-
-  const calculateTrend = (recent, previous) => {
-    if (previous === 0) return recent > 0 ? 100 : 0
-    return Math.round(((recent - previous) / previous) * 100)
-  }
-
-  const trends = {
-    total: calculateTrend(recentJobs.length, previousJobs.length),
-    pending: calculateTrend(
-      recentJobs.filter(j => j.status === 'PENDING').length,
-      previousJobs.filter(j => j.status === 'PENDING').length
-    ),
-    inProgress: calculateTrend(
-      recentJobs.filter(j => j.status === 'IN_PROGRESS').length,
-      previousJobs.filter(j => j.status === 'IN_PROGRESS').length
-    ),
-    completed: calculateTrend(
-      recentJobs.filter(j => j.status === 'COMPLETED').length,
-      previousJobs.filter(j => j.status === 'COMPLETED').length
-    )
-  }
-
-  // Rest of your component remains the same, but update the StatsCard components:
   return (
     <div className="container mx-auto p-6 space-y-6">
       <WelcomeSection />
@@ -97,26 +35,26 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Jobs"
-          value={jobStats.total}
+          value={stats.total}
           icon={Wrench}
           trend={trends.total}
         />
         <StatsCard
           title="Pending"
-          value={jobStats.pending}
+          value={stats.pending}
           icon={Clock}
           trend={trends.pending}
           trendColor="yellow"
         />
         <StatsCard
           title="In Progress"
-          value={jobStats.inProgress}
+          value={stats.inProgress}
           icon={Timer}
           trend={trends.inProgress}
         />
         <StatsCard
           title="Completed"
-          value={jobStats.completed}
+          value={stats.completed}
           icon={CheckCircle}
           trend={trends.completed}
           trendColor="green"
@@ -131,24 +69,24 @@ export default function DashboardPage() {
               <CardDescription>Latest job cards created</CardDescription>
             </div>
             <Button onClick={() => router.push('/jobs/new')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
               New Job
             </Button>
           </CardHeader>
           <CardContent>
-            <RecentJobsList jobs={jobs} />
+            <RecentJobsList jobs={recentJobs} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Schedule</CardTitle>
-            <CardDescription>Next 7 days appointments</CardDescription>
+            <CardTitle>Upcoming Jobs</CardTitle>
           </CardHeader>
           <CardContent>
-            <UpcomingJobs jobs={jobs} />
+            <UpcomingJobs />
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 } 

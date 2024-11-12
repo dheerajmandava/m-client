@@ -5,67 +5,39 @@ class SuppliersApi extends BaseApi {
     super(httpClient, '/suppliers');
   }
 
-  async getAll() {
-    try {
-      const response = await this.client.get(this.endpoint);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch suppliers');
-    }
+  async fetchAll() {
+    const response = await super.get();
+    return response.data || [];
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch supplier');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const response = await this.client.post(this.endpoint, data);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to create supplier');
-    }
+  async createSupplier(data) {
+    const response = await super.post('', data);
+    return response.data;
   }
 
-  async update(id, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${id}`, data);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to update supplier');
-    }
+  async updateSupplier(id, data) {
+    const response = await super.put(`/${id}`, data);
+    return response.data;
   }
 
-  async delete(id) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${id}`);
-      return { success: true, message: 'Supplier deleted successfully' };
-    } catch (error) {
-      return this.handleError(error, 'Failed to delete supplier');
-    }
+  async removeSupplier(id) {
+    const response = await super.delete(`/${id}`);
+    return response.data;
   }
 
-  async getOrders(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}/orders`);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch supplier orders');
-    }
+  async fetchSupplierOrders(id) {
+    const response = await super.get(`/${id}/orders`);
+    return response.data;
   }
 
-  async createOrder(id, data) {
-    try {
-      const response = await this.client.post(`${this.endpoint}/${id}/orders`, data);
-      return response;
-    } catch (error) {
-      return this.handleError(error, 'Failed to create supplier order');
-    }
+  async createSupplierOrder(id, orderData) {
+    const response = await super.post(`/${id}/orders`, orderData);
+    return response.data;
   }
 }
 

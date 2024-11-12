@@ -10,13 +10,18 @@ export default function StatsCard({ title, value, icon: Icon, trend, trendColor 
     neutral: 'text-zinc-600 bg-zinc-50/80 dark:text-zinc-200 dark:bg-zinc-900/50'
   }
 
+  // Format the value to a readable number
+  const formattedValue = typeof value === 'number' ? 
+    new Intl.NumberFormat('en-US').format(value) : 
+    value || 0;
+
   return (
     <Card className="stats-card">
       <div className="flex items-center justify-between mb-4">
         <div className="bg-primary/8 p-2.5 rounded-xl">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        {trend && (
+        {trend !== undefined && trend !== null && (
           <div className={cn(
             "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full",
             trend > 0 ? trendColorClasses.up : trendColorClasses.down
@@ -32,7 +37,7 @@ export default function StatsCard({ title, value, icon: Icon, trend, trendColor 
           {title}
         </h3>
         <p className="text-2xl font-semibold tracking-tight">
-          {value}
+          {formattedValue}
         </p>
       </div>
     </Card>

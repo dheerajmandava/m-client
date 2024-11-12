@@ -5,49 +5,29 @@ class EstimatesApi extends BaseApi {
     super(httpClient, '/estimates');
   }
 
-  async create(jobId, estimateData) {
-    try {
-      const response = await this.client.post(`/jobs/${jobId}/estimates`, estimateData);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create estimate');
-    }
+  async createEstimate(jobId, estimateData) {
+    const response = await super.post(`/jobs/${jobId}/estimates`, estimateData);
+    return response.data;
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch estimate');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async getJobEstimates(jobId) {
-    try {
-      const response = await this.client.get(`/jobs/${jobId}/estimates`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch estimates');
-    }
+  async fetchJobEstimates(jobId) {
+    const response = await super.get(`/jobs/${jobId}/estimates`);
+    return response.data;
   }
 
-  async updateStatus(id, status, notes) {
-    try {
-      const response = await this.client.patch(`${this.endpoint}/${id}/status`, { status, notes });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update estimate status');
-    }
+  async modifyStatus(id, status, notes) {
+    const response = await super.patch(`/${id}/status`, { status, notes });
+    return response.data;
   }
 
-  async delete(id) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to delete estimate');
-    }
+  async removeEstimate(id) {
+    const response = await super.delete(`/${id}`);
+    return response.data;
   }
 }
 

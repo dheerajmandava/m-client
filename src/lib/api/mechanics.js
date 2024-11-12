@@ -5,52 +5,33 @@ class MechanicsApi extends BaseApi {
     super(httpClient, '/mechanics');
   }
 
-  async getAll() {
-    try {
-      const response = await this.client.get(this.endpoint);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch mechanics');
-    }
+  async fetchAll() {
+    const response = await super.get();
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const response = await this.client.post(this.endpoint, {
-        ...data,
-        specialties: Array.isArray(data.specialties) ? data.specialties : [data.specialties]
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create mechanic');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async update(id, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update mechanic');
-    }
+  async createMechanic(data) {
+    const formattedData = {
+      ...data,
+      specialties: Array.isArray(data.specialties) ? data.specialties : [data.specialties]
+    };
+    const response = await super.post('', formattedData);
+    return response.data;
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch mechanic');
-    }
+  async updateMechanic(id, data) {
+    const response = await super.put(`/${id}`, data);
+    return response.data;
   }
 
-  async delete(id) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${id}`);
-      return { success: true, message: 'Mechanic deleted successfully' };
-    } catch (error) {
-      return this.handleError(error, 'Failed to delete mechanic');
-    }
+  async removeMechanic(id) {
+    const response = await super.delete(`/${id}`);
+    return response.data;
   }
 }
 

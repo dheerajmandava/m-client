@@ -56,10 +56,11 @@ export default function JobStatusManager({ jobId, currentStatus, className }) {
   const Icon = currentStatusInfo?.icon;
 
   const updateStatusMutation = useMutation({
-    mutationFn: (data) => api.jobs.updateStatus(jobId, data),
+    mutationFn: (data) => api.jobs.updateJobStatus(jobId, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries(['job', jobId]);
       setNotes('');
+      console.log('data', data);
       toast.success(data.message || 'Status updated successfully');
     },
     onError: (error) => {

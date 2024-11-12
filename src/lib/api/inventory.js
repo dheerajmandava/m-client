@@ -5,87 +5,49 @@ class InventoryApi extends BaseApi {
     super(httpClient, '/inventory');
   }
 
-  async getAll() {
-    try {
-      const response = await this.client.get(this.endpoint);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch inventory');
-    }
+  async fetchAll() {
+    const response = await super.get();
+    return response.data;
   }
 
-  async get(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}`);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to fetch inventory item');
-    }
+  async fetchOne(id) {
+    const response = await super.get(`/${id}`);
+    return response.data;
   }
 
-  async create(data) {
-    try {
-      const response = await this.client.post(this.endpoint, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to create inventory item');
-    }
+  async createItem(data) {
+    const response = await super.post('', data);
+    return response.data;
   }
 
-  async update(id, data) {
-    try {
-      const response = await this.client.put(`${this.endpoint}/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to update inventory item');
-    }
+  async updateItem(id, data) {
+    const response = await super.put(`/${id}`, data);
+    return response.data;
   }
 
-  async delete(id) {
-    try {
-      const response = await this.client.delete(`${this.endpoint}/${id}`);
-      return { success: true, message: 'Inventory item deleted successfully' };
-    } catch (error) {
-      return this.handleError(error, 'Failed to delete inventory item');
-    }
+  async removeItem(id) {
+    const response = await super.delete(`/${id}`);
+    return response.data;
   }
 
-  async adjustStock(id, data) {
-    try {
-      const response = await this.client.post(`${this.endpoint}/${id}/adjust`, data);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to adjust stock');
-    }
+  async adjustItemStock(id, adjustmentData) {
+    const response = await super.post(`/${id}/adjust`, adjustmentData);
+    return response.data;
   }
 
-  async getStockHistory(id) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/${id}/history`);
-      return response.data;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch stock history');
-    }
+  async fetchStockHistory(id) {
+    const response = await super.get(`/${id}/history`);
+    return response.data;
   }
 
-  async getLowStock() {
-    try {
-      const response = await this.client.get(`${this.endpoint}/low-stock`);
-      return response.data;
-    } catch (error) {
-      return this.handleError(error, 'Failed to fetch low stock items');
-    }
+  async fetchLowStock() {
+    const response = await super.get('/low-stock');
+    return response.data;
   }
 
-  async search(query) {
-    try {
-      const response = await this.client.get(`${this.endpoint}/search`, {
-        params: { q: query }
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'Failed to search inventory');
-    }
+  async searchItems(query) {
+    const response = await super.get('/search', { q: query });
+    return response.data;
   }
 }
 

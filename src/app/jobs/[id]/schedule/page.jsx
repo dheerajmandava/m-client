@@ -11,6 +11,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
 import { ChevronRight, Home } from 'lucide-react';
+import { useMechanics } from '@/hooks/useMechanics';
+import { useJobDetails } from '@/hooks/useJobDetails';
+import { useSchedule } from '@/hooks/useSchedule';
 
 const timeSlots = [
   { value: 'MORNING', label: 'Morning (9 AM - 12 PM)' },
@@ -23,38 +26,14 @@ export default function ScheduleJobPage({ params }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn } = useAuth();
+  const { mechanics, isLoading: mechanicsLoading } = useMechanics();
+  const { job, isLoading: jobLoading } = useJobDetails(params.id);
+  const { assignJob, isAssigning } = useSchedule();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedMechanic, setSelectedMechanic] = useState('');
   const [estimatedHours, setEstimatedHours] = useState('2');
-
-  // Fetch job data
-  const { data: job, isLoading: jobLoading } = useQuery({
-    queryKey: ['job', params.id],
-    queryFn: () => api.jobs.get(params.id),
-    enabled: !!params.id && isLoaded,
-  });
-
-  // Fetch mechanics data
-  const { data: mechanics = [], isLoading: mechanicsLoading } = useQuery({
-    queryKey: ['mechanics'],
-    queryFn: () => api.mechanics.getAll(),
-    enabled: isLoaded,
-  });
-
-  // Schedule mutation
-  const scheduleMutation = useMutation({
-    mutationFn: (scheduleData) => api.jobs.updateSchedule(params.id, scheduleData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['job', params.id]);
-      toast.success('Job scheduled successfully');
-      router.push(`/jobs/${params.id}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to schedule job');
-    },
-  });
 
   const handleSchedule = () => {
     if (!selectedDate || !selectedTime || !selectedMechanic) {
@@ -62,11 +41,18 @@ export default function ScheduleJobPage({ params }) {
       return;
     }
 
-    scheduleMutation.mutate({
-      scheduledDate: selectedDate,
-      scheduledTime: selectedTime,
-      mechanicId: selectedMechanic,
-      estimatedHours: parseFloat(estimatedHours)
+    assignJob({
+      jobId: params.id,
+      scheduleData: {
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
+        mechanicId: selectedMechanic,
+        estimatedHours: parseFloat(estimatedHours)
+      }
+    }, {
+      onSuccess: () => {
+        router.push(`/jobs/${params.id}`);
+      }
     });
   };
 

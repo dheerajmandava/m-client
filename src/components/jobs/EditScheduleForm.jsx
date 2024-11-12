@@ -4,12 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { api } from '@/lib/api/index';
 import { Input } from '@/components/ui/input';
 import { DialogFooter } from '../ui/dialog';
-
+import { useMechanics } from '@/hooks/useMechanics';
+import { useSchedule } from '@/hooks/useSchedule';
 
 const timeSlots = Array.from({ length: 12 }, (_, i) => {
   const hour = i + 9;
@@ -21,32 +19,28 @@ const timeSlots = Array.from({ length: 12 }, (_, i) => {
 
 export default function EditScheduleForm({ jobId, currentSchedule, onClose }) {
   const queryClient = useQueryClient();
+  const { mechanics, isLoading: isLoadingMechanics } = useMechanics();
   
-  if (!jobId) {
-    console.error('No jobId provided to EditScheduleForm');
-    return null;
-  }
+  const { modifySchedule, isModifying } = useSchedule();
 
-  const { data: mechanics = [], isLoading: isLoadingMechanics } = useQuery({
-    queryKey: ['mechanics'],
-    queryFn: () => api.mechanics.getAll()
-  });
-
-  const updateScheduleMutation = useMutation({
-    mutationFn: (data) => {
-      console.log('Mutation Data:', data);
-      return api.schedule.updateSchedule(jobId, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['job', jobId]);
-      toast.success('Schedule updated successfully');
-      onClose();
-    },
-    onError: (error) => {
-      console.error('Mutation Error:', error);
-      toast.error(error.message || 'Failed to update schedule');
-    }
-  });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    modifySchedule({
+      jobId,
+      scheduleData: {
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
+        mechanicId: selectedMechanic,
+        estimatedHours: parseFloat(estimatedHours)
+      }
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['job', jobId]);
+        onClose();
+      }
+    });
+  };
 
   const [selectedDate, setSelectedDate] = useState(
     currentSchedule?.scheduledDate ? new Date(currentSchedule.scheduledDate) : new Date()
@@ -62,29 +56,6 @@ export default function EditScheduleForm({ jobId, currentSchedule, onClose }) {
   );
 
   console.log('Selected Mechanic:', selectedMechanic);
-
-  const handleSubmit = (e) => {
-    e?.preventDefault();
-
-    console.log('Form Data:', {
-      date: selectedDate,
-      time: selectedTime,
-      mechanicId: selectedMechanic,
-      hours: estimatedHours
-    });
-
-    if (!selectedMechanic) {
-      toast.error('Please select a mechanic');
-      return;
-    }
-
-    updateScheduleMutation.mutate({
-      scheduledDate: selectedDate,
-      scheduledTime: selectedTime,
-      mechanicId: selectedMechanic,
-      estimatedHours: parseFloat(estimatedHours)
-    });
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -170,9 +141,9 @@ export default function EditScheduleForm({ jobId, currentSchedule, onClose }) {
         </Button>
         <Button 
           type="submit"
-          disabled={updateScheduleMutation.isPending}
+          disabled={isModifying}
         >
-          {updateScheduleMutation.isPending ? 'Updating...' : 'Update Schedule'}
+          {isModifying ? 'Updating...' : 'Update Schedule'}
         </Button>
       </DialogFooter>
     </form>

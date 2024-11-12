@@ -29,36 +29,51 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useSchedule } from '@/hooks/useSchedule';
+import { useMechanics } from '@/hooks/useMechanics';
 
 export default function SchedulePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showNewJobDialog, setShowNewJobDialog] = useState(false);
   const [sorting, setSorting] = useState([]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  const { data: jobsResponse, isLoading } = useQuery({
-    queryKey: ['jobs', selectedDate],
-    queryFn: () => api.schedule.getSchedule(selectedDate)
-  });
+  const { schedule, isLoading } = useSchedule(
+    selectedDate, 
+    new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000)
+  );
 
-  const jobsData = jobsResponse || [];
+  const { mechanics } = useMechanics();
 
-  // Create stable reference for the data
   const scheduledJobs = useMemo(() => {
-    const jobs = jobsData || [];
-    return [...jobs].sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
-  }, [jobsData]);
+    if (!schedule || !Array.isArray(schedule)) {
+      return [];
+    }
+
+    return schedule.map(job => ({
+      id: job.id,
+      customerName: job.customerName,
+      vehicle: `${job.vehicleMake} ${job.vehicleModel} - ${job.registrationNo}`,
+      scheduledTime: job.scheduledTime,
+      scheduledDate: new Date(job.scheduledDate).toLocaleDateString(),
+      status: job.status,
+      mechanicName: job.mechanic?.name || 'Unassigned',
+      mechanicId: job.mechanicId,
+      estimatedHours: job.estimatedHours,
+      jobNumber: job.jobNumber
+    }));
+  }, [schedule]);
 
   // Table columns with stable reference
   const columns = useMemo(() => [
     {
-      accessorKey: 'scheduledTime',
-      header: 'Time',
+      accessorKey: 'jobNumber',
+      header: 'Job #',
       cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.scheduledTime}</span>
+        <div className="font-medium text-primary">
+          {row.getValue('jobNumber')}
         </div>
       ),
     },
@@ -66,10 +81,7 @@ export default function SchedulePage() {
       accessorKey: 'customerName',
       header: 'Customer',
       cell: ({ row }) => (
-        <div>
-          <span className="font-medium">{row.original.customerName}</span>
-          <p className="text-xs text-muted-foreground">#{row.original.jobNumber}</p>
-        </div>
+        <div className="font-medium">{row.getValue('customerName')}</div>
       ),
     },
     {
@@ -78,12 +90,7 @@ export default function SchedulePage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
           <Car className="h-4 w-4 text-muted-foreground" />
-          <div>
-            {row.original.vehicleMake} {row.original.vehicleModel}
-            <span className="text-muted-foreground ml-2">
-              {row.original.registrationNo}
-            </span>
-          </div>
+          <span>{row.getValue('vehicle')}</span>
         </div>
       ),
     },
@@ -93,7 +100,7 @@ export default function SchedulePage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
           <User className="h-4 w-4 text-muted-foreground" />
-          <span>{row.original.mechanic?.name || '-'}</span>
+          <span>{row.original.mechanicName}</span>
         </div>
       ),
     },
@@ -131,13 +138,17 @@ export default function SchedulePage() {
     setSelectedDate(null);
   }, []);
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isLoading ? 'Loading...' : `${jobsData.length || 0} jobs scheduled`}
+            {isLoading ? 'Loading...' : `${scheduledJobs.length || 0} jobs scheduled`}
             {selectedDate ? ` for ${format(selectedDate, "MMMM d, yyyy")}` : ' in total'}
           </p>
         </div>

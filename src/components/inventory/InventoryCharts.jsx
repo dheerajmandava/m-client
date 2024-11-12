@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatIndianCurrency } from '@/lib/utils';
@@ -19,24 +19,29 @@ import {
 } from 'recharts';
 
 export default function InventoryCharts() {
-  const { data: inventory } = useQuery({
+  const { data: inventoryData = { data: [] } } = useQuery({
     queryKey: ['inventory'],
-    queryFn: api.getInventory
+    queryFn: () => api.inventory.getAll()
   });
 
-  const { data: orders } = useQuery({
+  const { data: ordersData = { data: [] } } = useQuery({
     queryKey: ['orders'],
-    queryFn: api.getPartOrders
+    queryFn: () => api.partOrders.getAll()
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliersData = { data: [] } } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: api.getSuppliers
+    queryFn: () => api.suppliers.getAll()
   });
+
+  // Ensure we have arrays to work with
+  const inventory = Array.isArray(inventoryData.data) ? inventoryData.data : [];
+  const orders = Array.isArray(ordersData.data) ? ordersData.data : [];
+  const suppliers = Array.isArray(suppliersData.data) ? suppliersData.data : [];
 
   // Calculate supplier performance
   const supplierPerformance = suppliers.map(supplier => {
-    const supplierOrders = orders.filter(order => order.supplier.id === supplier.id) || [];
+    const supplierOrders = orders.filter(order => order.supplier?.id === supplier.id) || [];
     const totalOrders = supplierOrders.length;
     const completedOnTime = supplierOrders.filter(order => 
       order.status === 'COMPLETE' && 
@@ -48,9 +53,9 @@ export default function InventoryCharts() {
       name: supplier.name,
       orders: totalOrders,
       performance: performanceRate.toFixed(1),
-      value: supplierOrders.reduce((sum, order) => sum + order.total, 0)
+      value: supplierOrders.reduce((sum, order) => sum + (order.total || 0), 0)
     };
-  }) || [];
+  });
 
   // Calculate monthly inventory value trends
   const monthlyTrends = orders.reduce((acc, order) => {
@@ -58,12 +63,12 @@ export default function InventoryCharts() {
     if (!acc[month]) {
       acc[month] = { month, value: 0, orders: 0 };
     }
-    acc[month].value += order.total;
+    acc[month].value += order.total || 0;
     acc[month].orders += 1;
     return acc;
   }, {});
 
-  const trendData = Object.values(monthlyTrends || {});
+  const trendData = Object.values(monthlyTrends);
 
   return (
     <div className="space-y-4">
