@@ -1,7 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api/index';
+import { useInventory } from '@/hooks/useInventory';
+import { useOrders } from '@/hooks/useOrders';
+import { useSuppliers } from '@/hooks/useSuppliers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatIndianCurrency } from '@/lib/utils';
@@ -19,34 +20,27 @@ import {
 } from 'recharts';
 
 export default function InventoryCharts() {
-  const { data: inventoryData = { data: [] } } = useQuery({
-    queryKey: ['inventory'],
-    queryFn: () => api.inventory.getAll()
-  });
-
-  const { data: ordersData = { data: [] } } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => api.partOrders.getAll()
-  });
-
-  const { data: suppliersData = { data: [] } } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => api.suppliers.getAll()
-  });
+  const { data: inventory } = useInventory();
+  const { data: orders } = useOrders();
+  const { data: suppliers } = useSuppliers();
 
   // Ensure we have arrays to work with
-  const inventory = Array.isArray(inventoryData.data) ? inventoryData.data : [];
-  const orders = Array.isArray(ordersData.data) ? ordersData.data : [];
-  const suppliers = Array.isArray(suppliersData.data) ? suppliersData.data : [];
+  const inventoryData = Array.isArray(inventory) ? inventory : [];
+  const ordersData = Array.isArray(orders) ? orders : [];
+  const suppliersData = Array.isArray(suppliers) ? suppliers : [];
 
   // Calculate supplier performance
-  const supplierPerformance = suppliers.map(supplier => {
-    const supplierOrders = orders.filter(order => order.supplier?.id === supplier.id) || [];
+  const supplierPerformance = suppliersData.map(supplier => {
+    const supplierOrders = ordersData.filter(order => 
+      order.supplier?.id === supplier.id
+    ) || [];
+
     const totalOrders = supplierOrders.length;
     const completedOnTime = supplierOrders.filter(order => 
       order.status === 'COMPLETE' && 
       new Date(order.completedAt) <= new Date(order.expectedDate)
     ).length;
+
     const performanceRate = totalOrders ? (completedOnTime / totalOrders) * 100 : 0;
 
     return {
@@ -58,7 +52,7 @@ export default function InventoryCharts() {
   });
 
   // Calculate monthly inventory value trends
-  const monthlyTrends = orders.reduce((acc, order) => {
+  const monthlyTrends = ordersData.reduce((acc, order) => {
     const month = new Date(order.createdAt).toLocaleString('default', { month: 'short' });
     if (!acc[month]) {
       acc[month] = { month, value: 0, orders: 0 };

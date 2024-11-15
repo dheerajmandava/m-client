@@ -52,10 +52,21 @@ export default function EstimateDetailsDialog({ estimate, onClose }) {
                     <tr>
                       <th className="text-left p-2">Type</th>
                       <th className="text-left p-2">Description</th>
+                      <th className="text-right p-2">Quantity</th>
+                      <th className="text-right p-2">Unit Price</th>
+                      <th className="text-right p-2">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Add your items here */}
+                    {estimate?.items?.map((item, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="p-2">{item.type}</td>
+                        <td className="p-2">{item.description}</td>
+                        <td className="p-2 text-right">{item.quantity}</td>
+                        <td className="p-2 text-right">₹{item.unitPrice.toFixed(2)}</td>
+                        <td className="p-2 text-right">₹{item.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </CardContent>

@@ -1,14 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 
 export function useEstimates(jobId) {
   const queryClient = useQueryClient();
 
   const estimatesQuery = useQuery({
     queryKey: ['estimates', jobId],
-    queryFn: () => api.estimates.fetchForJob(jobId),
-    enabled: !!jobId
+    queryFn: () => api.estimates.fetchJobEstimates(jobId),
+    enabled: Boolean(jobId),
+    staleTime: 30000,
+    retry: 1,
   });
 
   const createEstimateMutation = useMutation({
@@ -16,6 +18,9 @@ export function useEstimates(jobId) {
     onSuccess: () => {
       queryClient.invalidateQueries(['estimates', jobId]);
       toast.success('Estimate created successfully');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to create estimate');
     }
   });
 
@@ -24,19 +29,25 @@ export function useEstimates(jobId) {
     onSuccess: () => {
       queryClient.invalidateQueries(['estimates', jobId]);
       toast.success('Estimate updated successfully');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update estimate');
     }
   });
 
   const deleteEstimateMutation = useMutation({
-    mutationFn: (estimateId) => api.estimates.deleteEstimate(estimateId),
+    mutationFn: (estimateId) => api.estimates.removeEstimate(estimateId),
     onSuccess: () => {
       queryClient.invalidateQueries(['estimates', jobId]);
       toast.success('Estimate deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete estimate');
     }
   });
 
   return {
-    estimates: estimatesQuery.data || [],
+    estimates: estimatesQuery.data?.data || [],
     isLoading: estimatesQuery.isLoading,
     error: estimatesQuery.error,
     createEstimate: createEstimateMutation.mutate,

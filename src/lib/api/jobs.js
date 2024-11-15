@@ -22,7 +22,7 @@ class JobsApi extends BaseApi {
     return response.data;
   }
 
-  async createJob(data) {
+  async create(data) {
     const formattedData = {
       ...data,
       mileage: data.mileage?.toString(),
@@ -30,7 +30,7 @@ class JobsApi extends BaseApi {
       estimatedCost: parseFloat(data.estimatedCost || 0)
     };
     const response = await super.post('', formattedData);
-    return response.data;
+    return response;
   }
 
   async updateJob(id, data) {

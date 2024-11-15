@@ -5,29 +5,30 @@ class EstimatesApi extends BaseApi {
     super(httpClient, '/estimates');
   }
 
-  async createEstimate(jobId, estimateData) {
-    const response = await super.post(`/jobs/${jobId}/estimates`, estimateData);
-    return response.data;
+  async createEstimate(jobId, data) {
+    const response = await super.post(`/jobs/${jobId}`, data);
+    return response;
   }
 
   async fetchOne(id) {
     const response = await super.get(`/${id}`);
-    return response.data;
+    return response;
   }
 
   async fetchJobEstimates(jobId) {
-    const response = await super.get(`/jobs/${jobId}/estimates`);
-    return response.data;
+    if (!jobId) return { data: [] };
+    const response = await super.get(`/jobs/${jobId}`);
+    return response;
   }
 
   async modifyStatus(id, status, notes) {
     const response = await super.patch(`/${id}/status`, { status, notes });
-    return response.data;
+    return response;
   }
 
   async removeEstimate(id) {
     const response = await super.delete(`/${id}`);
-    return response.data;
+    return response;
   }
 }
 

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/lib/api';
+import { api } from '@/lib/api/index';
 import { format } from "date-fns"
 import {
   Popover,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { Calendar } from "@/components/ui/calendar"
+import { toast } from 'sonner';
 
 const ITEM_TYPES = [
   { value: 'LABOR', label: 'Labor - 18%' },
@@ -86,6 +87,32 @@ export default function CreateEstimateForm({ jobId, onSuccess }) {
   const onSubmit = async (formData) => {
     try {
       setIsSubmitting(true);
+      
+      // Validate items first
+      if (!items.length || items.some(item => !item.price || !item.quantity)) {
+        toast.error('Please fill in all item details');
+        return;
+      }
+
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => 
+        sum + (Number(item.quantity) * Number(item.price)), 0);
+
+      const totalTax = items.reduce((sum, item) => {
+        const amount = Number(item.quantity) * Number(item.price);
+        switch(item.type) {
+          case 'LABOR': return sum + (amount * 0.18);
+          case 'PARTS_12': return sum + (amount * 0.12);
+          case 'PARTS_18': return sum + (amount * 0.18);
+          case 'PARTS_28': return sum + (amount * 0.28);
+          default: return sum;
+        }
+      }, 0);
+
+      const discountRate = Number(formData.discountRate) || 0;
+      const discountAmount = (subtotal * discountRate) / 100;
+      const total = subtotal + totalTax - discountAmount;
+
       const estimateData = {
         items: items.map(item => ({
           type: item.type,
@@ -96,16 +123,22 @@ export default function CreateEstimateForm({ jobId, onSuccess }) {
           taxRate: item.type === 'PARTS_12' ? 12 : 
                   item.type === 'PARTS_28' ? 28 : 18,
         })),
-        discountRate: Number(formData.discountRate) || 0,
+        subtotal,
+        taxAmount: totalTax,
+        discountRate,
+        discountAmount,
+        total,
         validUntil: formData.validUntil,
         termsAndConditions: formData.termsAndConditions,
       };
 
-      await api.createEstimate(jobId, estimateData);
+      console.log('Submitting estimate data:', estimateData); // For debugging
+
+      await api.estimates.createEstimate(jobId, estimateData);
       onSuccess();
     } catch (error) {
       console.error('Failed to create estimate:', error);
-      // Handle error (show toast notification, etc.)
+      toast.error(error.message || 'Failed to create estimate');
     } finally {
       setIsSubmitting(false);
     }

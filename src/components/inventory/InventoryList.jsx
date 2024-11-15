@@ -15,16 +15,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from 'lucide-react';
+import { useInventory } from '@/hooks/useInventory';
 
 export default function InventoryList({ filterLowStock = false }) {
   const queryClient = useQueryClient();
   const [editItem, setEditItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
 
-  const { data: inventory, isLoading } = useQuery({
-    queryKey: ['inventory', { lowStock: filterLowStock }],
-    queryFn: () => filterLowStock ? api.inventory.getLowStock() : api.inventory.getAll()
-  });
+  const { data: inventory, isLoading } = useInventory();
 
   console.log('inventory', inventory);
 

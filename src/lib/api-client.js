@@ -11,7 +11,9 @@ class ApiClient {
       jobs: '/jobs',
       estimates: '/estimates',
       inventory: '/inventory',
-      shops: '/shops'
+      shops: '/shops',
+      suppliers: '/suppliers',
+      partOrders: '/part-orders'
     };
 
     ApiClient.instance = this;

@@ -23,15 +23,13 @@ import {
 } from "@/components/ui/card";
 import SupplierDetailsDialog from './SupplierDetailsDialog';
 import EditSupplierDialog from './EditSupplierDialog';
+import { useSuppliers } from '@/hooks/useSuppliers';
 
 export default function SuppliersList() {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [editingSupplier, setEditingSupplier] = useState(null);
 
-  const { data: suppliers, isLoading } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => api.suppliers.getAll()
-  });
+  const { data: suppliers, isLoading } = useSuppliers();
 
   if (isLoading) {
     return <div className="text-center py-4">Loading suppliers...</div>;

@@ -8,13 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useInventorySettings } from '@/hooks/useInventory';
 
 export default function InventorySettings() {
   const queryClient = useQueryClient();
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ['inventory-settings'],
-    queryFn: api.getInventorySettings
-  });
+  const { data: settings, isLoading } = useInventorySettings();
 
   const [formData, setFormData] = useState({
     orderingCost: settings?.orderingCost || '',

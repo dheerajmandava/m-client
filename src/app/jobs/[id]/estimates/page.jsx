@@ -11,39 +11,27 @@ import EstimateList from '@/components/estimates/EstimateList';
 import EstimateDetailsDialog from '@/components/estimates/EstimateDetailsDialog';  
 import { toast } from 'sonner';
 import { api } from '@/lib/api/index';
+import { useEstimates } from '@/hooks/useEstimates';
 
 export default function JobEstimatesPage({ params }) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
 
-  const { data: jobResponse } = useQuery({
+  const { data: job, isLoading: isLoadingJob } = useQuery({
     queryKey: ['job', params.id],
-    queryFn: () => api.jobs.get(params.id)
+    queryFn: () => api.jobs.getOne(params.id)
   });
 
-  const job = jobResponse;
+  const { 
+    estimates, 
+    isLoading: isLoadingEstimates, 
+    createEstimate,
+    isCreating 
+  } = useEstimates(params.id);
 
-  const { data: estimatesResponse, refetch: refetchEstimates } = useQuery({
-    queryKey: ['estimates', params.id],
-    queryFn: () => api.estimates.getJobEstimates(params.id),
-    enabled: !!params.id
-  });
-
-  const createEstimateMutation = useMutation({
-    mutationFn: (data) => api.estimates.create(params.id, data),
-    onSuccess: () => {
-      refetchEstimates();
-      setIsCreateDialogOpen(false);
-      toast.success('Estimate created successfully');
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  const handleEstimateCreated = async () => {
+  const handleEstimateCreated = async (data) => {
+    await createEstimate(data);
     setIsCreateDialogOpen(false);
-    await refetchEstimates();
   };
 
   const handleViewEstimate = (estimate) => {
@@ -53,6 +41,9 @@ export default function JobEstimatesPage({ params }) {
   const handleCloseEstimateDetails = () => {
     setSelectedEstimate(null);
   };
+
+  if (isLoadingJob) return <div>Loading job details...</div>;
+  if (isLoadingEstimates) return <div>Loading estimates...</div>;
 
   return (
     <div className="container mx-auto py-6 space-y-6">

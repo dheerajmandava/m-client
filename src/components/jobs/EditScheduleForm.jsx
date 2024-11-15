@@ -8,6 +8,10 @@ import { Input } from '@/components/ui/input';
 import { DialogFooter } from '../ui/dialog';
 import { useMechanics } from '@/hooks/useMechanics';
 import { useSchedule } from '@/hooks/useSchedule';
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const timeSlots = Array.from({ length: 12 }, (_, i) => {
   const hour = i + 9;
@@ -59,58 +63,58 @@ export default function EditScheduleForm({ jobId, currentSchedule, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Date</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border mt-0.5"
-              disabled={(date) => date < new Date()}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Time</Label>
-            <Select
-              value={selectedTime}
-              onValueChange={setSelectedTime}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select time" />
-              </SelectTrigger>
-              <SelectContent>
-                {timeSlots.map(slot => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : "Select date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                disabled={(date) => date < new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Time</Label>
+          <Select value={selectedTime} onValueChange={setSelectedTime} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select time" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeSlots.map(slot => (
+                <SelectItem key={slot.value} value={slot.value}>
+                  {slot.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
           <Label>Mechanic</Label>
-          <Select
-            value={selectedMechanic}
-            onValueChange={(value) => {
-              console.log('Selected Value:', value);
-              setSelectedMechanic(value);
-            }}
-            required
-          >
+          <Select value={selectedMechanic} onValueChange={setSelectedMechanic} required>
             <SelectTrigger>
               <SelectValue placeholder="Select mechanic" />
             </SelectTrigger>
             <SelectContent>
               {mechanics.map(mechanic => (
-                <SelectItem 
-                  key={mechanic.id} 
-                  value={mechanic.id.toString()}
-                >
+                <SelectItem key={mechanic.id} value={mechanic.id.toString()}>
                   {mechanic.name}
                 </SelectItem>
               ))}

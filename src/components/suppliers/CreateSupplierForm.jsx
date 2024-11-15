@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 
-export default function CreateSupplierDialog({ open, onOpenChange }) {
+export default function CreateSupplierForm({ open, onOpenChange }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
@@ -25,8 +25,6 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
     phone: '',
     address: '',
     gst: '',
-    terms: '',
-    leadTime: '',
     notes: ''
   });
 
@@ -34,7 +32,7 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
     mutationFn: (data) => api.suppliers.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['suppliers']);
-      toast.success('Supplier created successfully');
+      toast.success('Supplier added successfully');
       onOpenChange(false);
       setFormData({
         name: '',
@@ -43,13 +41,11 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
         phone: '',
         address: '',
         gst: '',
-        terms: '',
-        leadTime: '',
         notes: ''
       });
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to create supplier');
+      toast.error(error.message || 'Failed to add supplier');
     }
   });
 
@@ -60,26 +56,25 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Supplier</DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Company Name *</Label>
-              <Input
-                id="name"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  name: e.target.value
-                }))}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Company Name *</Label>
+            <Input
+              id="name"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                name: e.target.value
+              }))}
+            />
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contactPerson">Contact Person</Label>
               <Input
@@ -91,20 +86,6 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
                 }))}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  email: e.target.value
-                }))}
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number *</Label>
               <Input
@@ -117,44 +98,19 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
                 }))}
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="terms">Payment Terms</Label>
-              <Input
-                id="terms"
-                value={formData.terms}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  terms: e.target.value
-                }))}
-                placeholder="Net 30, etc."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="leadTime">Lead Time (days)</Label>
-              <Input
-                id="leadTime"
-                type="number"
-                value={formData.leadTime}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  leadTime: e.target.value
-                }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gst">GST Number</Label>
-              <Input
-                id="gst"
-                value={formData.gst}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  gst: e.target.value
-                }))}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                email: e.target.value
+              }))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -165,6 +121,18 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
               onChange={(e) => setFormData(prev => ({
                 ...prev,
                 address: e.target.value
+              }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gst">GST Number</Label>
+            <Input
+              id="gst"
+              value={formData.gst}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                gst: e.target.value
               }))}
             />
           </div>
@@ -197,7 +165,7 @@ export default function CreateSupplierDialog({ open, onOpenChange }) {
               {createSupplierMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Supplier
+              Add Supplier
             </Button>
           </div>
         </form>
