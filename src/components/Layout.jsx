@@ -25,7 +25,7 @@ export default function Layout({ children }) {
 
   const { data: shopData } = useQuery({
     queryKey: ['shop'],
-    queryFn: () => api.shops.getProfile(),
+    queryFn: () => api.shops.fetchProfile(),
     enabled: !!userId,
     retry: false
   })

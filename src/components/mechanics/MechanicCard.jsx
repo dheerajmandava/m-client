@@ -62,25 +62,14 @@ export default function MechanicCard({ mechanic }) {
         </div>
       </div>
 
-
-      <div className="flex gap-2 mt-auto">
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="flex-1 text-xs"
-          onClick={() => router.push(`/mechanics/${mechanic.id}`)}
-        >
-          Mechanic Details
-        </Button>
-        <Button 
-          variant="default"
-          size="sm"
-          className="flex-1 text-xs"
-          onClick={() => router.push(`/mechanics/${mechanic.id}/schedule`)}
-        >
-          View Schedule
-        </Button>
-      </div>
+      <Button 
+        variant="outline" 
+        size="sm"
+        className="w-full text-xs"
+        onClick={() => router.push(`/mechanics/${mechanic.id}`)}
+      >
+        Mechanic Details
+      </Button>
     </Card>
   )
 } 

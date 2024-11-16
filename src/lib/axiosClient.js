@@ -20,16 +20,41 @@ class HttpClient {
   }
 
   setupInterceptors() {
+    let isRefreshing = false;
+    let failedQueue = [];
+
+    const processQueue = (error, token = null) => {
+      failedQueue.forEach(prom => {
+        if (error) {
+          prom.reject(error);
+        } else {
+          prom.resolve(token);
+        }
+      });
+      failedQueue = [];
+    };
+
     this.client.interceptors.request.use(
       async (config) => {
-        try {
-          // Get token from clerk session
-          const token = await fetch('/api/auth/token').then(res => res.json());
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        if (!isRefreshing) {
+          try {
+            const response = await fetch('/api/auth/token');
+            const data = await response.json();
+            
+            if (data.error) {
+              throw new Error(data.error);
+            }
+            
+            if (data.token) {
+              config.headers.Authorization = `Bearer ${data.token}`;
+            }
+          } catch (error) {
+            console.error('Token fetch error:', error);
+            if (window.location.pathname !== '/sign-in') {
+              window.location.href = '/sign-in';
+            }
+            return Promise.reject(error);
           }
-        } catch (error) {
-          console.error('Auth token error:', error);
         }
         return config;
       },

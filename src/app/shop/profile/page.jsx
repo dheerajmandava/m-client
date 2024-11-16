@@ -6,14 +6,35 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { Building2, Mail, Phone, MapPin, Pencil } from 'lucide-react';
+import { useAuth } from '@clerk/nextjs';
+import { useEffect } from 'react';
 
 export default function ShopProfilePage() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   
   const { data: shopData, isLoading, error } = useQuery({
     queryKey: ['shop'],
-    queryFn: () => api.shops.getProfile()
+    queryFn: async () => {
+      const response = await api.shops.fetchProfile();
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch shop profile');
+      }
+      return response.data;
+    },
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+    enabled: isLoaded && isSignedIn
   });
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   console.log('Shop Data:', shopData); // Add this for debugging
 
@@ -31,16 +52,20 @@ export default function ShopProfilePage() {
     );
   }
 
-  // Check for error state
-  if (error || !shopData?.success) {
+  // Add error boundary
+  if (error) {
+    console.error('Shop profile error:', error);
     return (
       <div className="container mx-auto p-4">
         <Card>
           <CardContent className="text-center py-8">
             <h2 className="text-2xl font-semibold mb-4">Error Loading Shop Profile</h2>
             <p className="text-gray-600 mb-6">
-              {shopData?.message || error?.message || 'Failed to load shop profile'}
+              {error.message || 'Failed to load shop profile'}
             </p>
+            <Button onClick={() => router.push('/shop/new')}>
+              Create New Profile
+            </Button>
           </CardContent>
         </Card>
       </div>
